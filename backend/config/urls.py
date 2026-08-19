@@ -2,6 +2,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from drf_spectacular.views import (
+    SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView,
+)
+from rest_framework.permissions import AllowAny
 from alquiler.views import (
     UserViewSet, CiudadViewSet, InmuebleViewSet, InquilinoViewSet,
     ContratoAlquilerViewSet, ContratoInquilinoViewSet, PagoViewSet, GastoViewSet
@@ -23,4 +27,12 @@ urlpatterns = [
     path('api/', include(router.urls)),  # Todas las rutas de la API estarán bajo /api/
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[AllowAny]), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(
+        url_name='schema', permission_classes=[AllowAny],
+    ), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(
+        url_name='schema', permission_classes=[AllowAny],
+    ), name='redoc'),
 ]

@@ -29,6 +29,11 @@ python manage.py runserver
 
 API disponible en `http://localhost:8000/api/`, admin en `http://localhost:8000/admin/`.
 
+Documentación interactiva de la API (OpenAPI, generada con drf-spectacular):
+- Swagger UI: `http://localhost:8000/api/docs/`
+- Redoc: `http://localhost:8000/api/redoc/`
+- Schema crudo: `http://localhost:8000/api/schema/`
+
 ## Frontend
 
 ```
