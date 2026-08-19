@@ -1,12 +1,16 @@
-from rest_framework import viewsets, permissions
+from django.core.files.base import ContentFile
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import (
     User, Ciudad, Inmueble, Inquilino,
-    ContratoAlquiler, ContratoInquilino, Pago, Gasto,
+    ContratoAlquiler, ContratoInquilino, Pago, Gasto, EstadoPago,
 )
 from .serializers import (
     UserSerializer, CiudadSerializer, InmuebleSerializer, InquilinoSerializer,
     ContratoAlquilerSerializer, ContratoInquilinoSerializer, PagoSerializer, GastoSerializer,
 )
+from .services.recibos import generar_recibo_pdf
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -54,6 +58,18 @@ class PagoViewSet(viewsets.ModelViewSet):
     serializer_class = PagoSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['contrato', 'estado']
+
+    @action(detail=True, methods=['post'], url_path='regenerar-recibo')
+    def regenerar_recibo(self, request, pk=None):
+        pago = self.get_object()
+        if pago.estado != EstadoPago.PAGADO:
+            return Response(
+                {'detail': 'Solo se puede emitir recibo para pagos en estado Pagado.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        pdf_bytes = generar_recibo_pdf(pago)
+        pago.recibo_pdf.save(f'{pago.numero_recibo}.pdf', ContentFile(pdf_bytes), save=True)
+        return Response(PagoSerializer(pago, context={'request': request}).data)
 
 
 class GastoViewSet(viewsets.ModelViewSet):

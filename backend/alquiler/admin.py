@@ -45,8 +45,9 @@ class ContratoAlquilerAdmin(admin.ModelAdmin):
 
 @admin.register(Pago)
 class PagoAdmin(admin.ModelAdmin):
-    list_display = ['contrato', 'fecha_pago', 'fecha_periodo', 'monto', 'estado']
+    list_display = ['contrato', 'fecha_pago', 'fecha_periodo', 'monto', 'estado', 'recibo_pdf']
     list_filter = ['estado', 'metodo_pago']
+    readonly_fields = ['recibo_pdf']
 
 
 @admin.register(Gasto)

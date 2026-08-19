@@ -216,6 +216,13 @@ class Pago(TimeStampedModel):
     comprobante = models.FileField('Comprobante', upload_to='comprobantes/', blank=True, null=True)
     observaciones = models.TextField('Observaciones', blank=True, null=True)
     estado = models.CharField('Estado', max_length=3, choices=EstadoPago.choices, default=EstadoPago.PENDIENTE)
+    recibo_pdf = models.FileField(
+        'Recibo (PDF)', upload_to='recibos/', blank=True, null=True, editable=False,
+    )
+
+    @property
+    def numero_recibo(self):
+        return f'REC-{self.id:06d}'
 
     class Meta:
         verbose_name = 'Pago'

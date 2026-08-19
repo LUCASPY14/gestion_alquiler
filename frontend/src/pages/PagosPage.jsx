@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
+import api from '../api/client';
 import { METODO_PAGO, ESTADO_PAGO } from '../utils/choices';
 
 function hoy() {
@@ -16,8 +17,9 @@ const VACIO = {
 };
 
 export default function PagosPage() {
-  const { items, loading, error, create, update, remove } = useResource('pagos');
+  const { items, loading, error, create, update, remove, reload } = useResource('pagos');
   const { items: contratos } = useResource('contratos');
+  const [emitiendo, setEmitiendo] = useState(null);
 
   const [form, setForm] = useState(VACIO);
   const [editingId, setEditingId] = useState(null);
@@ -63,6 +65,16 @@ export default function PagosPage() {
   async function handleDelete(id) {
     if (!window.confirm('¿Eliminar este pago?')) return;
     await remove(id);
+  }
+
+  async function handleEmitirRecibo(id) {
+    setEmitiendo(id);
+    try {
+      await api.post(`/pagos/${id}/regenerar-recibo/`);
+      await reload();
+    } finally {
+      setEmitiendo(null);
+    }
   }
 
   return (
@@ -132,6 +144,7 @@ export default function PagosPage() {
             <th>Monto</th>
             <th>Método</th>
             <th>Estado</th>
+            <th>Recibo</th>
             <th></th>
           </tr>
         </thead>
@@ -144,6 +157,23 @@ export default function PagosPage() {
               <td>{pago.monto}</td>
               <td>{METODO_PAGO.find((m) => m.value === pago.metodo_pago)?.label}</td>
               <td>{ESTADO_PAGO.find((s) => s.value === pago.estado)?.label}</td>
+              <td>
+                {pago.recibo_pdf ? (
+                  <a href={pago.recibo_pdf} target="_blank" rel="noreferrer">
+                    Descargar
+                  </a>
+                ) : pago.estado === 'PAG' ? (
+                  <button
+                    type="button"
+                    disabled={emitiendo === pago.id}
+                    onClick={() => handleEmitirRecibo(pago.id)}
+                  >
+                    {emitiendo === pago.id ? 'Emitiendo...' : 'Emitir recibo'}
+                  </button>
+                ) : (
+                  '—'
+                )}
+              </td>
               <td className="actions">
                 <button type="button" onClick={() => handleEdit(pago)}>
                   Editar
