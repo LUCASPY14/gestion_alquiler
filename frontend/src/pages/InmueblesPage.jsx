@@ -1,0 +1,201 @@
+import { useState } from 'react';
+import { useResource } from '../hooks/useResource';
+import { useAuth } from '../context/AuthContext';
+import { TIPO_INMUEBLE } from '../utils/choices';
+
+function formVacio(propietarioId) {
+  return {
+    propietario: propietarioId ?? '',
+    codigo_referencia: '',
+    direccion: '',
+    ciudad: '',
+    tipo: 'CASA',
+    habitaciones: 0,
+    banos: 0,
+    precio_mensual: '',
+    disponible: true,
+  };
+}
+
+export default function InmueblesPage() {
+  const { items, loading, error, create, update, remove } = useResource('inmuebles');
+  const { items: ciudades } = useResource('ciudades');
+  const { items: usuarios } = useResource('users');
+  const { userId } = useAuth();
+
+  const [form, setForm] = useState(() => formVacio(userId));
+  const [editingId, setEditingId] = useState(null);
+  const [formError, setFormError] = useState('');
+
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setFormError('');
+    try {
+      if (editingId) {
+        await update(editingId, form);
+      } else {
+        await create(form);
+      }
+      setForm(formVacio(userId));
+      setEditingId(null);
+    } catch {
+      setFormError('No se pudo guardar. Revisá los datos.');
+    }
+  }
+
+  function handleEdit(inmueble) {
+    setEditingId(inmueble.id);
+    setForm({
+      propietario: inmueble.propietario,
+      codigo_referencia: inmueble.codigo_referencia,
+      direccion: inmueble.direccion,
+      ciudad: inmueble.ciudad,
+      tipo: inmueble.tipo,
+      habitaciones: inmueble.habitaciones,
+      banos: inmueble.banos,
+      precio_mensual: inmueble.precio_mensual,
+      disponible: inmueble.disponible,
+    });
+  }
+
+  function handleCancel() {
+    setEditingId(null);
+    setForm(formVacio(userId));
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('¿Eliminar este inmueble?')) return;
+    await remove(id);
+  }
+
+  return (
+    <div>
+      <h1>Inmuebles</h1>
+
+      <form onSubmit={handleSubmit} className="form-grid">
+        <input
+          name="codigo_referencia"
+          placeholder="Código de referencia"
+          value={form.codigo_referencia}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="direccion"
+          placeholder="Dirección"
+          value={form.direccion}
+          onChange={handleChange}
+          required
+        />
+        <select name="ciudad" value={form.ciudad} onChange={handleChange} required>
+          <option value="">Ciudad...</option>
+          {ciudades.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+        <select name="propietario" value={form.propietario} onChange={handleChange} required>
+          <option value="">Propietario...</option>
+          {usuarios.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.username}
+            </option>
+          ))}
+        </select>
+        <select name="tipo" value={form.tipo} onChange={handleChange}>
+          {TIPO_INMUEBLE.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          name="habitaciones"
+          placeholder="Habitaciones"
+          value={form.habitaciones}
+          onChange={handleChange}
+          min="0"
+        />
+        <input
+          type="number"
+          name="banos"
+          placeholder="Baños"
+          value={form.banos}
+          onChange={handleChange}
+          min="0"
+        />
+        <input
+          type="number"
+          step="0.01"
+          name="precio_mensual"
+          placeholder="Precio mensual (Gs)"
+          value={form.precio_mensual}
+          onChange={handleChange}
+          required
+        />
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            name="disponible"
+            checked={form.disponible}
+            onChange={handleChange}
+          />
+          Disponible
+        </label>
+        <div className="form-actions">
+          <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
+          {editingId && (
+            <button type="button" onClick={handleCancel}>
+              Cancelar
+            </button>
+          )}
+        </div>
+      </form>
+      {formError && <p className="error">{formError}</p>}
+
+      {loading && <p>Cargando...</p>}
+      {error && <p className="error">{error}</p>}
+
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Dirección</th>
+            <th>Ciudad</th>
+            <th>Tipo</th>
+            <th>Precio mensual</th>
+            <th>Disponible</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((inmueble) => (
+            <tr key={inmueble.id}>
+              <td>{inmueble.codigo_referencia}</td>
+              <td>{inmueble.direccion}</td>
+              <td>{inmueble.ciudad_nombre}</td>
+              <td>{TIPO_INMUEBLE.find((t) => t.value === inmueble.tipo)?.label}</td>
+              <td>{inmueble.precio_mensual}</td>
+              <td>{inmueble.disponible ? 'Sí' : 'No'}</td>
+              <td className="actions">
+                <button type="button" onClick={() => handleEdit(inmueble)}>
+                  Editar
+                </button>
+                <button type="button" onClick={() => handleDelete(inmueble.id)}>
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
