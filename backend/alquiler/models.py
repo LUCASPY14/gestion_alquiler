@@ -1,8 +1,11 @@
+from decimal import Decimal
+
 from django.db import models
 from django.db.models import Q, F, Func
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import RangeOperators
+from django.core.validators import MinValueValidator
 
 # --------------------- CHOICES (Opciones) ---------------------
 class TipoUsuario(models.TextChoices):
@@ -102,7 +105,10 @@ class Inmueble(TimeStampedModel):
     habitaciones = models.PositiveIntegerField('Habitaciones', default=0)
     banos = models.PositiveIntegerField('Baños', default=0)
     area_construida = models.DecimalField('Área construida (m²)', max_digits=10, decimal_places=2, blank=True, null=True)
-    precio_mensual = models.DecimalField('Precio mensual (Gs)', max_digits=12, decimal_places=2)
+    precio_mensual = models.DecimalField(
+        'Precio mensual (Gs)', max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
     deposito_garantia = models.DecimalField('Depósito de garantía (Gs)', max_digits=12, decimal_places=2, blank=True, null=True)
     disponible = models.BooleanField('Disponible', default=True)
     foto_principal = models.ImageField('Foto principal', upload_to='inmuebles/fotos/', blank=True, null=True)
@@ -148,8 +154,14 @@ class ContratoAlquiler(TimeStampedModel):
     numero_contrato = models.CharField('Número de contrato', max_length=50, unique=True)
     fecha_inicio = models.DateField('Fecha de inicio')
     fecha_fin = models.DateField('Fecha de fin')
-    monto_mensual = models.DecimalField('Monto mensual (Gs)', max_digits=12, decimal_places=2)
-    deposito = models.DecimalField('Depósito (Gs)', max_digits=12, decimal_places=2)
+    monto_mensual = models.DecimalField(
+        'Monto mensual (Gs)', max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    deposito = models.DecimalField(
+        'Depósito (Gs)', max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+    )
     periodicidad = models.CharField('Periodicidad', max_length=3, choices=PeriodicidadContrato.choices, default=PeriodicidadContrato.MENSUAL)
     estado = models.CharField('Estado', max_length=3, choices=EstadoContrato.choices, default=EstadoContrato.ACTIVO)
     documento_contrato = models.FileField('Documento del contrato (PDF)', upload_to='contratos/', blank=True, null=True)
@@ -196,7 +208,10 @@ class Pago(TimeStampedModel):
     contrato = models.ForeignKey(ContratoAlquiler, on_delete=models.PROTECT, related_name='pagos')
     fecha_pago = models.DateField('Fecha de pago')
     fecha_periodo = models.DateField('Fecha del período (mes al que corresponde)')
-    monto = models.DecimalField('Monto (Gs)', max_digits=12, decimal_places=2)
+    monto = models.DecimalField(
+        'Monto (Gs)', max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
     metodo_pago = models.CharField('Método de pago', max_length=10, choices=MetodoPago.choices)
     comprobante = models.FileField('Comprobante', upload_to='comprobantes/', blank=True, null=True)
     observaciones = models.TextField('Observaciones', blank=True, null=True)
@@ -218,7 +233,10 @@ class Pago(TimeStampedModel):
 class Gasto(TimeStampedModel):
     inmueble = models.ForeignKey(Inmueble, on_delete=models.CASCADE, related_name='gastos')
     descripcion = models.CharField('Descripción', max_length=200)
-    monto = models.DecimalField('Monto (Gs)', max_digits=12, decimal_places=2)
+    monto = models.DecimalField(
+        'Monto (Gs)', max_digits=12, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
     fecha = models.DateField('Fecha del gasto')
     categoria = models.CharField('Categoría', max_length=5, choices=CategoriaGasto.choices)
     comprobante = models.FileField('Comprobante', upload_to='gastos/', blank=True, null=True)
