@@ -1,0 +1,63 @@
+from rest_framework import viewsets, permissions
+from .models import (
+    User, Ciudad, Inmueble, Inquilino,
+    ContratoAlquiler, ContratoInquilino, Pago, Gasto,
+)
+from .serializers import (
+    UserSerializer, CiudadSerializer, InmuebleSerializer, InquilinoSerializer,
+    ContratoAlquilerSerializer, ContratoInquilinoSerializer, PagoSerializer, GastoSerializer,
+)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class CiudadViewSet(viewsets.ModelViewSet):
+    queryset = Ciudad.objects.all()
+    serializer_class = CiudadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class InmuebleViewSet(viewsets.ModelViewSet):
+    queryset = Inmueble.objects.select_related('propietario', 'ciudad').all()
+    serializer_class = InmuebleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['ciudad', 'tipo', 'disponible']
+    search_fields = ['direccion', 'codigo_referencia']
+
+
+class InquilinoViewSet(viewsets.ModelViewSet):
+    queryset = Inquilino.objects.all()
+    serializer_class = InquilinoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ContratoAlquilerViewSet(viewsets.ModelViewSet):
+    queryset = ContratoAlquiler.objects.select_related('inmueble').prefetch_related('contrato_inquilinos__inquilino').all()
+    serializer_class = ContratoAlquilerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['inmueble', 'estado']
+
+
+class ContratoInquilinoViewSet(viewsets.ModelViewSet):
+    queryset = ContratoInquilino.objects.select_related('contrato', 'inquilino').all()
+    serializer_class = ContratoInquilinoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['contrato', 'inquilino', 'rol']
+
+
+class PagoViewSet(viewsets.ModelViewSet):
+    queryset = Pago.objects.select_related('contrato').all()
+    serializer_class = PagoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['contrato', 'estado']
+
+
+class GastoViewSet(viewsets.ModelViewSet):
+    queryset = Gasto.objects.select_related('inmueble').all()
+    serializer_class = GastoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filterset_fields = ['inmueble', 'categoria', 'pagado']
