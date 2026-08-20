@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from alquiler.models import EstadoPago
-from .factories import crear_pago, crear_propietario
+from .factories import crear_pago, crear_propietario, crear_inmueble, crear_contrato
 
 MEDIA_ROOT_TEMPORAL = tempfile.mkdtemp()
 
@@ -45,15 +45,17 @@ class GeneracionAutomaticaReciboTests(TestCase):
 class RegenerarReciboAPITests(APITestCase):
     def setUp(self):
         self.propietario = crear_propietario()
+        self.inmueble = crear_inmueble(propietario=self.propietario)
+        self.contrato = crear_contrato(inmueble=self.inmueble)
         self.client.force_authenticate(user=self.propietario)
 
     def test_regenerar_recibo_de_pago_pagado(self):
-        pago = crear_pago(estado=EstadoPago.PAGADO)
+        pago = crear_pago(contrato=self.contrato, estado=EstadoPago.PAGADO)
         response = self.client.post(f'/api/pagos/{pago.id}/regenerar-recibo/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNotNone(response.data['recibo_pdf'])
 
     def test_no_permite_regenerar_recibo_de_pago_pendiente(self):
-        pago = crear_pago(estado=EstadoPago.PENDIENTE)
+        pago = crear_pago(contrato=self.contrato, estado=EstadoPago.PENDIENTE)
         response = self.client.post(f'/api/pagos/{pago.id}/regenerar-recibo/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

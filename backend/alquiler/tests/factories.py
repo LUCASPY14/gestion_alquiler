@@ -42,7 +42,7 @@ def crear_inmueble(propietario=None, ciudad=None, **kwargs):
     return Inmueble.objects.create(**defaults)
 
 
-def crear_inquilino(**kwargs):
+def crear_inquilino(registrado_por=None, **kwargs):
     n = next(_seq)
     defaults = {
         'nombre': f'Nombre{n}',
@@ -51,6 +51,7 @@ def crear_inquilino(**kwargs):
         'numero_documento': f'{10000000 + n}',
         'email': f'inquilino{n}@example.com',
         'telefono_principal': '0981000000',
+        'registrado_por': registrado_por or crear_propietario(),
     }
     defaults.update(kwargs)
     return Inquilino.objects.create(**defaults)
