@@ -16,5 +16,17 @@ services:
       timeout: 5s
       retries: 5
 
+  waha:
+    image: devlikeapro/waha:latest
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY:-waha-dev-key}
+      WHATSAPP_DEFAULT_ENGINE: WEBJS
+    ports:
+      - "3010:3000"
+    volumes:
+      - waha_sessions:/app/.sessions
+
 volumes:
   pgdata:
+  waha_sessions:

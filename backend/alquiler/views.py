@@ -12,6 +12,7 @@ from .serializers import (
     ContratoAlquilerSerializer, ContratoInquilinoSerializer, PagoSerializer, GastoSerializer,
 )
 from .services.recibos import generar_recibo_pdf
+from .services.whatsapp import enviar_recibo_whatsapp
 
 
 class PropietarioScopedMixin:
@@ -111,6 +112,7 @@ class PagoViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
             )
         pdf_bytes = generar_recibo_pdf(pago)
         pago.recibo_pdf.save(f'{pago.numero_recibo}.pdf', ContentFile(pdf_bytes), save=True)
+        enviar_recibo_whatsapp(pago)
         return Response(PagoSerializer(pago, context={'request': request}).data)
 
 

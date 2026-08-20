@@ -4,6 +4,7 @@ from django.dispatch import receiver
 
 from .models import EstadoPago, Pago
 from .services.recibos import generar_recibo_pdf
+from .services.whatsapp import enviar_recibo_whatsapp
 
 
 @receiver(post_save, sender=Pago)
@@ -15,3 +16,4 @@ def emitir_recibo_al_pagar(sender, instance, created, **kwargs):
     instance.recibo_pdf.save(
         f'{instance.numero_recibo}.pdf', ContentFile(pdf_bytes), save=True,
     )
+    enviar_recibo_whatsapp(instance)

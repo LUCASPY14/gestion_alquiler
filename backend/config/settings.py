@@ -119,14 +119,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 STATIC_URL = 'static/'
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# WAHA (WhatsApp HTTP API) — envío del recibo de pago por WhatsApp
+WAHA_URL = env('WAHA_URL', default='http://localhost:3010')
+WAHA_API_KEY = env('WAHA_API_KEY', default='waha-dev-key')
+WAHA_SESSION = env('WAHA_SESSION', default='default')
 
 
 REST_FRAMEWORK = {
