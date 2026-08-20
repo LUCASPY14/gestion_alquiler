@@ -1,11 +1,12 @@
 from django.core.files.base import ContentFile
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import (
     User, Ciudad, Inmueble, Inquilino,
-    ContratoAlquiler, ContratoInquilino, Pago, Gasto, EstadoPago,
+    ContratoAlquiler, ContratoInquilino, Pago, Gasto, EstadoPago, TipoUsuario,
 )
+from .permissions import es_staff_o_admin
 from .serializers import (
     UserSerializer, CiudadSerializer, InmuebleSerializer, InquilinoSerializer,
     ContratoAlquilerSerializer, ContratoInquilinoSerializer, PagoSerializer, GastoSerializer,
@@ -13,51 +14,92 @@ from .serializers import (
 from .services.recibos import generar_recibo_pdf
 
 
+class PropietarioScopedMixin:
+    """Limita el queryset al dueño de los datos.
+
+    - Staff/ADMIN: sin restricción.
+    - INQUILINO: filtra por `inquilino_lookup` (ruta hasta Inquilino.usuario);
+      si el viewset no define uno, no ve nada (ej. Gasto).
+    - Resto (propietario): filtra por `propietario_lookup`.
+    """
+    propietario_lookup = None
+    inquilino_lookup = None
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if es_staff_o_admin(user):
+            return qs
+        if user.tipo_usuario == TipoUsuario.INQUILINO:
+            if not self.inquilino_lookup:
+                return qs.none()
+            return qs.filter(**{self.inquilino_lookup: user})
+        if not self.propietario_lookup:
+            return qs.none()
+        return qs.filter(**{self.propietario_lookup: user})
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if es_staff_o_admin(user):
+            return qs
+        return qs.filter(pk=user.pk)
 
 
 class CiudadViewSet(viewsets.ModelViewSet):
     queryset = Ciudad.objects.all()
     serializer_class = CiudadSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
 
-class InmuebleViewSet(viewsets.ModelViewSet):
+class InmuebleViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
     queryset = Inmueble.objects.select_related('propietario', 'ciudad').all()
     serializer_class = InmuebleSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['ciudad', 'tipo', 'disponible']
     search_fields = ['direccion', 'codigo_referencia']
+    propietario_lookup = 'propietario'
+    inquilino_lookup = 'contratos__contrato_inquilinos__inquilino__usuario'
+
+    def perform_create(self, serializer):
+        serializer.save(propietario=self.request.user)
 
 
-class InquilinoViewSet(viewsets.ModelViewSet):
+class InquilinoViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
     queryset = Inquilino.objects.all()
     serializer_class = InquilinoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    propietario_lookup = 'registrado_por'
+    inquilino_lookup = 'usuario'
+
+    def perform_create(self, serializer):
+        serializer.save(registrado_por=self.request.user)
 
 
-class ContratoAlquilerViewSet(viewsets.ModelViewSet):
+class ContratoAlquilerViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
     queryset = ContratoAlquiler.objects.select_related('inmueble').prefetch_related('contrato_inquilinos__inquilino').all()
     serializer_class = ContratoAlquilerSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['inmueble', 'estado']
+    propietario_lookup = 'inmueble__propietario'
+    inquilino_lookup = 'contrato_inquilinos__inquilino__usuario'
 
 
-class ContratoInquilinoViewSet(viewsets.ModelViewSet):
+class ContratoInquilinoViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
     queryset = ContratoInquilino.objects.select_related('contrato', 'inquilino').all()
     serializer_class = ContratoInquilinoSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['contrato', 'inquilino', 'rol']
+    propietario_lookup = 'contrato__inmueble__propietario'
+    inquilino_lookup = 'inquilino__usuario'
 
 
-class PagoViewSet(viewsets.ModelViewSet):
+class PagoViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
     queryset = Pago.objects.select_related('contrato').all()
     serializer_class = PagoSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['contrato', 'estado']
+    propietario_lookup = 'contrato__inmueble__propietario'
+    inquilino_lookup = 'contrato__contrato_inquilinos__inquilino__usuario'
 
     @action(detail=True, methods=['post'], url_path='regenerar-recibo')
     def regenerar_recibo(self, request, pk=None):
@@ -72,8 +114,8 @@ class PagoViewSet(viewsets.ModelViewSet):
         return Response(PagoSerializer(pago, context={'request': request}).data)
 
 
-class GastoViewSet(viewsets.ModelViewSet):
+class GastoViewSet(PropietarioScopedMixin, viewsets.ModelViewSet):
     queryset = Gasto.objects.select_related('inmueble').all()
     serializer_class = GastoSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['inmueble', 'categoria', 'pagado']
+    propietario_lookup = 'inmueble__propietario'

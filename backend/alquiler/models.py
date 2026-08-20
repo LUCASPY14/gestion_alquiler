@@ -135,6 +135,14 @@ class Inquilino(TimeStampedModel):
     telefono_secundario = models.CharField('Teléfono secundario', max_length=20, blank=True, null=True)
     fecha_nacimiento = models.DateField('Fecha de nacimiento', blank=True, null=True)
     activo = models.BooleanField('Activo', default=True)
+    registrado_por = models.ForeignKey(
+        User, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='inquilinos_registrados',
+    )
+    usuario = models.OneToOneField(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='inquilino_perfil',
+    )
 
     class Meta:
         verbose_name = 'Inquilino'

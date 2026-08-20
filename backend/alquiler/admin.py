@@ -26,7 +26,8 @@ class InmuebleAdmin(admin.ModelAdmin):
 
 @admin.register(Inquilino)
 class InquilinoAdmin(admin.ModelAdmin):
-    list_display = ['apellido', 'nombre', 'tipo_documento', 'numero_documento', 'activo']
+    list_display = ['apellido', 'nombre', 'tipo_documento', 'numero_documento', 'activo', 'registrado_por', 'usuario']
+    list_filter = ['registrado_por']
     search_fields = ['nombre', 'apellido', 'numero_documento']
 
 

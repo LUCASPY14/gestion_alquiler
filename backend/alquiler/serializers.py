@@ -4,6 +4,7 @@ from .models import (
     User, Ciudad, Inmueble, Inquilino,
     ContratoAlquiler, ContratoInquilino, Pago, Gasto,
 )
+from .permissions import es_staff_o_admin
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -25,12 +26,14 @@ class InmuebleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Inmueble
         fields = '__all__'
+        read_only_fields = ['propietario']
 
 
 class InquilinoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Inquilino
         fields = '__all__'
+        read_only_fields = ['registrado_por', 'usuario']
 
 
 class ContratoInquilinoSerializer(serializers.ModelSerializer):
@@ -39,6 +42,18 @@ class ContratoInquilinoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContratoInquilino
         fields = ['id', 'contrato', 'inquilino', 'inquilino_nombre', 'rol']
+
+    def validate_contrato(self, value):
+        user = self.context['request'].user
+        if not es_staff_o_admin(user) and value.inmueble.propietario_id != user.id:
+            raise serializers.ValidationError('Ese contrato no te pertenece.')
+        return value
+
+    def validate_inquilino(self, value):
+        user = self.context['request'].user
+        if not es_staff_o_admin(user) and value.registrado_por_id != user.id:
+            raise serializers.ValidationError('Ese inquilino no está registrado por vos.')
+        return value
 
 
 class ContratoAlquilerSerializer(serializers.ModelSerializer):
@@ -54,6 +69,12 @@ class ContratoAlquilerSerializer(serializers.ModelSerializer):
             'inquilinos_detalle', 'creado_en', 'actualizado_en',
         ]
 
+    def validate_inmueble(self, value):
+        user = self.context['request'].user
+        if not es_staff_o_admin(user) and value.propietario_id != user.id:
+            raise serializers.ValidationError('Ese inmueble no te pertenece.')
+        return value
+
 
 class PagoSerializer(serializers.ModelSerializer):
     contrato_numero = serializers.CharField(source='contrato.numero_contrato', read_only=True)
@@ -62,6 +83,12 @@ class PagoSerializer(serializers.ModelSerializer):
         model = Pago
         fields = '__all__'
 
+    def validate_contrato(self, value):
+        user = self.context['request'].user
+        if not es_staff_o_admin(user) and value.inmueble.propietario_id != user.id:
+            raise serializers.ValidationError('Ese contrato no te pertenece.')
+        return value
+
 
 class GastoSerializer(serializers.ModelSerializer):
     inmueble_direccion = serializers.CharField(source='inmueble.direccion', read_only=True)
@@ -69,3 +96,9 @@ class GastoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gasto
         fields = '__all__'
+
+    def validate_inmueble(self, value):
+        user = self.context['request'].user
+        if not es_staff_o_admin(user) and value.propietario_id != user.id:
+            raise serializers.ValidationError('Ese inmueble no te pertenece.')
+        return value
