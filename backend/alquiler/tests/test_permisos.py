@@ -1,4 +1,5 @@
 import tempfile
+from unittest.mock import Mock, patch
 
 from django.test import override_settings
 from rest_framework import status
@@ -128,6 +129,11 @@ class VisibilidadStaffYAdminTests(APITestCase):
 @override_settings(MEDIA_ROOT=MEDIA_ROOT_TEMPORAL)
 class PortalInquilinoTests(APITestCase):
     def setUp(self):
+        parcheador = patch('alquiler.services.whatsapp.requests.post')
+        mock_post = parcheador.start()
+        mock_post.return_value = Mock(status_code=200, raise_for_status=lambda: None)
+        self.addCleanup(parcheador.stop)
+
         self.propietario = crear_propietario()
         self.usuario_inquilino = crear_propietario(tipo_usuario='INQUILINO')
         self.inquilino = crear_inquilino(registrado_por=self.propietario, usuario=self.usuario_inquilino)
