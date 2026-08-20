@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { METODO_PAGO, ESTADO_PAGO } from '../utils/choices';
 
@@ -17,6 +18,7 @@ const VACIO = {
 };
 
 export default function PagosPage() {
+  const { esInquilino } = useAuth();
   const { items, loading, error, create, update, remove, reload } = useResource('pagos');
   const { items: contratos } = useResource('contratos');
   const [emitiendo, setEmitiendo] = useState(null);
@@ -79,57 +81,59 @@ export default function PagosPage() {
 
   return (
     <div>
-      <h1>Pagos</h1>
+      <h1>{esInquilino ? 'Mis pagos' : 'Pagos'}</h1>
 
-      <form onSubmit={handleSubmit} className="form-grid">
-        <select name="contrato" value={form.contrato} onChange={handleChange} required>
-          <option value="">Contrato...</option>
-          {contratos.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.numero_contrato}
-            </option>
-          ))}
-        </select>
-        <input type="date" name="fecha_pago" value={form.fecha_pago} onChange={handleChange} required />
-        <input
-          type="date"
-          name="fecha_periodo"
-          value={form.fecha_periodo}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="number"
-          step="0.01"
-          name="monto"
-          placeholder="Monto (Gs)"
-          value={form.monto}
-          onChange={handleChange}
-          required
-        />
-        <select name="metodo_pago" value={form.metodo_pago} onChange={handleChange}>
-          {METODO_PAGO.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-        <select name="estado" value={form.estado} onChange={handleChange}>
-          {ESTADO_PAGO.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <div className="form-actions">
-          <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
-          {editingId && (
-            <button type="button" onClick={handleCancel}>
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
+      {!esInquilino && (
+        <form onSubmit={handleSubmit} className="form-grid">
+          <select name="contrato" value={form.contrato} onChange={handleChange} required>
+            <option value="">Contrato...</option>
+            {contratos.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.numero_contrato}
+              </option>
+            ))}
+          </select>
+          <input type="date" name="fecha_pago" value={form.fecha_pago} onChange={handleChange} required />
+          <input
+            type="date"
+            name="fecha_periodo"
+            value={form.fecha_periodo}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="number"
+            step="0.01"
+            name="monto"
+            placeholder="Monto (Gs)"
+            value={form.monto}
+            onChange={handleChange}
+            required
+          />
+          <select name="metodo_pago" value={form.metodo_pago} onChange={handleChange}>
+            {METODO_PAGO.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <select name="estado" value={form.estado} onChange={handleChange}>
+            {ESTADO_PAGO.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <div className="form-actions">
+            <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
+            {editingId && (
+              <button type="button" onClick={handleCancel}>
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+      )}
       {formError && <p className="error">{formError}</p>}
 
       {loading && <p>Cargando...</p>}
@@ -145,7 +149,7 @@ export default function PagosPage() {
             <th>Método</th>
             <th>Estado</th>
             <th>Recibo</th>
-            <th></th>
+            {!esInquilino && <th></th>}
           </tr>
         </thead>
         <tbody>
@@ -162,6 +166,8 @@ export default function PagosPage() {
                   <a href={pago.recibo_pdf} target="_blank" rel="noreferrer">
                     Descargar
                   </a>
+                ) : esInquilino ? (
+                  '—'
                 ) : pago.estado === 'PAG' ? (
                   <button
                     type="button"
@@ -174,14 +180,16 @@ export default function PagosPage() {
                   '—'
                 )}
               </td>
-              <td className="actions">
-                <button type="button" onClick={() => handleEdit(pago)}>
-                  Editar
-                </button>
-                <button type="button" onClick={() => handleDelete(pago.id)}>
-                  Eliminar
-                </button>
-              </td>
+              {!esInquilino && (
+                <td className="actions">
+                  <button type="button" onClick={() => handleEdit(pago)}>
+                    Editar
+                  </button>
+                  <button type="button" onClick={() => handleDelete(pago.id)}>
+                    Eliminar
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

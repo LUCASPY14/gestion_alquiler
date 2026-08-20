@@ -1,29 +1,23 @@
 import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
-import { useAuth } from '../context/AuthContext';
 import { TIPO_INMUEBLE } from '../utils/choices';
 
-function formVacio(propietarioId) {
-  return {
-    propietario: propietarioId ?? '',
-    codigo_referencia: '',
-    direccion: '',
-    ciudad: '',
-    tipo: 'CASA',
-    habitaciones: 0,
-    banos: 0,
-    precio_mensual: '',
-    disponible: true,
-  };
-}
+const VACIO = {
+  codigo_referencia: '',
+  direccion: '',
+  ciudad: '',
+  tipo: 'CASA',
+  habitaciones: 0,
+  banos: 0,
+  precio_mensual: '',
+  disponible: true,
+};
 
 export default function InmueblesPage() {
   const { items, loading, error, create, update, remove } = useResource('inmuebles');
   const { items: ciudades } = useResource('ciudades');
-  const { items: usuarios } = useResource('users');
-  const { userId } = useAuth();
 
-  const [form, setForm] = useState(() => formVacio(userId));
+  const [form, setForm] = useState(VACIO);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState('');
 
@@ -41,7 +35,7 @@ export default function InmueblesPage() {
       } else {
         await create(form);
       }
-      setForm(formVacio(userId));
+      setForm(VACIO);
       setEditingId(null);
     } catch {
       setFormError('No se pudo guardar. Revisá los datos.');
@@ -51,7 +45,6 @@ export default function InmueblesPage() {
   function handleEdit(inmueble) {
     setEditingId(inmueble.id);
     setForm({
-      propietario: inmueble.propietario,
       codigo_referencia: inmueble.codigo_referencia,
       direccion: inmueble.direccion,
       ciudad: inmueble.ciudad,
@@ -65,7 +58,7 @@ export default function InmueblesPage() {
 
   function handleCancel() {
     setEditingId(null);
-    setForm(formVacio(userId));
+    setForm(VACIO);
   }
 
   async function handleDelete(id) {
@@ -97,14 +90,6 @@ export default function InmueblesPage() {
           {ciudades.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nombre}
-            </option>
-          ))}
-        </select>
-        <select name="propietario" value={form.propietario} onChange={handleChange} required>
-          <option value="">Propietario...</option>
-          {usuarios.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.username}
             </option>
           ))}
         </select>

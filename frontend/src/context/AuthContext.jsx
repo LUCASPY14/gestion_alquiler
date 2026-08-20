@@ -4,13 +4,15 @@ import { decodeJwtPayload } from '../utils/jwt';
 
 const AuthContext = createContext(null);
 
-function userIdFromStoredToken() {
+function sesionDesdeTokenGuardado() {
   const token = localStorage.getItem('access_token');
-  return token ? decodeJwtPayload(token)?.user_id ?? null : null;
+  if (!token) return { userId: null, tipoUsuario: null };
+  const payload = decodeJwtPayload(token);
+  return { userId: payload?.user_id ?? null, tipoUsuario: payload?.tipo_usuario ?? null };
 }
 
 export function AuthProvider({ children }) {
-  const [userId, setUserId] = useState(userIdFromStoredToken);
+  const [sesion, setSesion] = useState(sesionDesdeTokenGuardado);
 
   async function login(username, password) {
     const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/token/`, {
@@ -19,18 +21,26 @@ export function AuthProvider({ children }) {
     });
     localStorage.setItem('access_token', data.access);
     localStorage.setItem('refresh_token', data.refresh);
-    setUserId(decodeJwtPayload(data.access)?.user_id ?? null);
+    const payload = decodeJwtPayload(data.access);
+    setSesion({ userId: payload?.user_id ?? null, tipoUsuario: payload?.tipo_usuario ?? null });
   }
 
   function logout() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    setUserId(null);
+    setSesion({ userId: null, tipoUsuario: null });
   }
 
   const value = useMemo(
-    () => ({ userId, isAuthenticated: userId !== null, login, logout }),
-    [userId],
+    () => ({
+      userId: sesion.userId,
+      tipoUsuario: sesion.tipoUsuario,
+      esInquilino: sesion.tipoUsuario === 'INQUILINO',
+      isAuthenticated: sesion.userId !== null,
+      login,
+      logout,
+    }),
+    [sesion],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
