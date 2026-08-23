@@ -25,6 +25,8 @@ export const ESTADO_CONTRATO = [
   { value: 'REN', label: 'Renovado' },
 ];
 
+export const ESTADO_CONTRATO_TONO = { ACT: 'green', FIN: 'slate', RES: 'rose', REN: 'accent' };
+
 export const ROL_INQUILINO = [
   { value: 'TIT', label: 'Titular' },
   { value: 'COD', label: 'Codeudor' },
@@ -43,6 +45,8 @@ export const ESTADO_PAGO = [
   { value: 'PEN', label: 'Pendiente' },
   { value: 'ANU', label: 'Anulado' },
 ];
+
+export const ESTADO_PAGO_TONO = { PAG: 'green', PEN: 'amber', ANU: 'rose' };
 
 export const CATEGORIA_GASTO = [
   { value: 'REP', label: 'Reparación' },

@@ -26,8 +26,8 @@ describe('Login', () => {
     const user = userEvent.setup();
     renderLogin();
 
-    await user.type(screen.getByPlaceholderText('Usuario'), 'ana');
-    await user.type(screen.getByPlaceholderText('Contraseña'), 'clave-segura');
+    await user.type(screen.getByLabelText('Usuario'), 'ana');
+    await user.type(screen.getByLabelText('Contraseña'), 'clave-segura');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
     expect(mockLogin).toHaveBeenCalledWith('ana', 'clave-segura');
@@ -39,8 +39,8 @@ describe('Login', () => {
     const user = userEvent.setup();
     renderLogin();
 
-    await user.type(screen.getByPlaceholderText('Usuario'), 'ana');
-    await user.type(screen.getByPlaceholderText('Contraseña'), 'mala-clave');
+    await user.type(screen.getByLabelText('Usuario'), 'ana');
+    await user.type(screen.getByLabelText('Contraseña'), 'mala-clave');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
     expect(await screen.findByText('Usuario o contraseña incorrectos')).toBeInTheDocument();

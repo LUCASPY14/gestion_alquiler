@@ -1,249 +1,26 @@
-:root {
-  --text: #2b2a33;
-  --text-h: #08060d;
-  --bg: #fff;
-  --bg-alt: #f7f7f9;
-  --border: #e5e4e7;
-  --accent: #6b3bff;
-  --accent-h: #5a2fe0;
-  --danger: #c0392b;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  font: 16px/145% var(--sans);
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme {
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  --color-accent-50: #f2eeff;
+  --color-accent-100: #e6dfff;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #6b3bff;
+  --color-accent-700: #5a2fe0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #d1d2d6;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --bg-alt: #1e1f26;
-    --border: #2e303a;
-    --accent: #a78bfa;
-    --accent-h: #8b6ff0;
+@layer base {
+  html {
+    color-scheme: light dark;
   }
-}
 
-* {
-  box-sizing: border-box;
-}
+  body {
+    @apply bg-white text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200;
+  }
 
-body {
-  margin: 0;
-}
-
-#root {
-  min-height: 100svh;
-}
-
-h1 {
-  font-size: 28px;
-  color: var(--text-h);
-  margin: 0 0 16px;
-}
-
-button {
-  font: inherit;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--bg-alt);
-  color: var(--text-h);
-  border-radius: 6px;
-  padding: 6px 12px;
-}
-
-button[type='submit'] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
-button[type='submit']:hover {
-  background: var(--accent-h);
-}
-
-input,
-select,
-textarea {
-  font: inherit;
-  padding: 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.error {
-  color: var(--danger);
-  margin: 8px 0;
-}
-
-.pagina-cargando {
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text);
-}
-
-/* Login */
-.login-page {
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 280px;
-  padding: 24px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-/* Layout */
-.layout {
-  display: flex;
-  min-height: 100svh;
-}
-
-.sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: var(--bg-alt);
-  border-right: 1px solid var(--border);
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar h2 {
-  font-size: 18px;
-  margin: 0 0 16px;
-}
-
-.sidebar ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.sidebar a {
-  display: block;
-  padding: 8px 10px;
-  border-radius: 6px;
-  color: var(--text);
-  text-decoration: none;
-}
-
-.sidebar a.active {
-  background: var(--accent);
-  color: white;
-}
-
-.content {
-  flex: 1;
-  padding: 28px 32px;
-  overflow-x: auto;
-}
-
-/* Dashboard cards */
-.cards {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.card {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px 24px;
-  min-width: 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.card-value {
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-.card-label {
-  color: var(--text);
-}
-
-/* Forms */
-.form-inline {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-alt);
-}
-
-.form-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Tables */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-th {
-  color: var(--text-h);
-  font-weight: 600;
-}
-
-.actions {
-  display: flex;
-  gap: 6px;
-}
-
-.inline-list {
-  list-style: none;
-  margin: 0 0 6px;
-  padding: 0;
-  font-size: 14px;
+  #root {
+    min-height: 100svh;
+  }
 }

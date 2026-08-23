@@ -27,23 +27,39 @@ export default function Layout() {
   }
 
   return (
-    <div className="layout">
-      <nav className="sidebar">
-        <h2>Gestión Alquiler</h2>
-        <ul>
+    <div className="flex min-h-svh">
+      <nav className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+        <h2 className="mb-6 px-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
+          Gestión Alquiler
+        </h2>
+        <ul className="flex flex-1 flex-col gap-0.5">
           {links.map((link) => (
             <li key={link.to}>
-              <NavLink to={link.to} end={link.end}>
+              <NavLink
+                to={link.to}
+                end={link.end}
+                className={({ isActive }) =>
+                  `block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-accent-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                  }`
+                }
+              >
                 {link.label}
               </NavLink>
             </li>
           ))}
         </ul>
-        <button type="button" onClick={handleLogout}>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="mt-4 inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
           Cerrar sesión
         </button>
       </nav>
-      <main className="content">
+      <main className="flex-1 overflow-x-auto bg-white p-8 dark:bg-slate-950">
         <Outlet />
       </main>
     </div>

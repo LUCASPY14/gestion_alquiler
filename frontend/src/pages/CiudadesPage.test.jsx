@@ -32,14 +32,14 @@ describe('CiudadesPage (integración con useCrudForm)', () => {
     render(<CiudadesPage />);
     await screen.findByText('Asunción');
 
-    await user.type(screen.getByPlaceholderText('Nombre'), 'Encarnación');
-    await user.type(screen.getByPlaceholderText('Departamento'), 'Itapúa');
+    await user.type(screen.getByLabelText('Nombre'), 'Encarnación');
+    await user.type(screen.getByLabelText('Departamento'), 'Itapúa');
     await user.click(screen.getByRole('button', { name: 'Agregar' }));
 
     await waitFor(() =>
       expect(api.post).toHaveBeenCalledWith('/ciudades/', { nombre: 'Encarnación', departamento: 'Itapúa' }),
     );
-    expect(screen.getByPlaceholderText('Nombre')).toHaveValue('');
+    expect(screen.getByLabelText('Nombre')).toHaveValue('');
   });
 
   it('editar precarga el formulario y guarda con update', async () => {
@@ -51,7 +51,7 @@ describe('CiudadesPage (integración con useCrudForm)', () => {
     const filaAsuncion = screen.getByText('Asunción').closest('tr');
     await user.click(within(filaAsuncion).getByRole('button', { name: 'Editar' }));
 
-    expect(screen.getByPlaceholderText('Nombre')).toHaveValue('Asunción');
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Asunción');
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Guardar' }));

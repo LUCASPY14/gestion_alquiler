@@ -1,6 +1,11 @@
 import { useResource } from '../hooks/useResource';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { TIPO_INMUEBLE } from '../utils/choices';
+import Badge from '../components/Badge';
+import {
+  btnDanger, btnPrimary, btnSecondary, btnSm, card, checkbox, checkboxRow,
+  errorText, field, input, label, pageTitle, td, tableRow, th,
+} from '../ui/styles';
 
 const VACIO = {
   codigo_referencia: '',
@@ -36,119 +41,99 @@ export default function InmueblesPage() {
 
   return (
     <div>
-      <h1>Inmuebles</h1>
+      <h1 className={pageTitle}>Inmuebles</h1>
 
-      <form onSubmit={handleSubmit} className="form-grid">
-        <input
-          name="codigo_referencia"
-          placeholder="Código de referencia"
-          value={form.codigo_referencia}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="direccion"
-          placeholder="Dirección"
-          value={form.direccion}
-          onChange={handleChange}
-          required
-        />
-        <select name="ciudad" value={form.ciudad} onChange={handleChange} required>
-          <option value="">Ciudad...</option>
-          {ciudades.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
-          ))}
-        </select>
-        <select name="tipo" value={form.tipo} onChange={handleChange}>
-          {TIPO_INMUEBLE.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          name="habitaciones"
-          placeholder="Habitaciones"
-          value={form.habitaciones}
-          onChange={handleChange}
-          min="0"
-        />
-        <input
-          type="number"
-          name="banos"
-          placeholder="Baños"
-          value={form.banos}
-          onChange={handleChange}
-          min="0"
-        />
-        <input
-          type="number"
-          step="0.01"
-          name="precio_mensual"
-          placeholder="Precio mensual (Gs)"
-          value={form.precio_mensual}
-          onChange={handleChange}
-          required
-        />
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            name="disponible"
-            checked={form.disponible}
-            onChange={handleChange}
-          />
-          Disponible
-        </label>
-        <div className="form-actions">
-          <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
+      <form onSubmit={handleSubmit} className={`${card} mb-6`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={field}>
+            <label className={label} htmlFor="codigo_referencia">Código de referencia</label>
+            <input id="codigo_referencia" name="codigo_referencia" className={input} value={form.codigo_referencia} onChange={handleChange} required />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="direccion">Dirección</label>
+            <input id="direccion" name="direccion" className={input} value={form.direccion} onChange={handleChange} required />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="ciudad">Ciudad</label>
+            <select id="ciudad" name="ciudad" className={input} value={form.ciudad} onChange={handleChange} required>
+              <option value="">Ciudad...</option>
+              {ciudades.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="tipo">Tipo</label>
+            <select id="tipo" name="tipo" className={input} value={form.tipo} onChange={handleChange}>
+              {TIPO_INMUEBLE.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="habitaciones">Habitaciones</label>
+            <input id="habitaciones" type="number" name="habitaciones" className={input} value={form.habitaciones} onChange={handleChange} min="0" />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="banos">Baños</label>
+            <input id="banos" type="number" name="banos" className={input} value={form.banos} onChange={handleChange} min="0" />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="precio_mensual">Precio mensual (Gs)</label>
+            <input id="precio_mensual" type="number" step="0.01" name="precio_mensual" className={input} value={form.precio_mensual} onChange={handleChange} required />
+          </div>
+          <label className={checkboxRow}>
+            <input type="checkbox" name="disponible" className={checkbox} checked={form.disponible} onChange={handleChange} />
+            Disponible
+          </label>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button type="submit" className={btnPrimary}>{editingId ? 'Guardar' : 'Agregar'}</button>
           {editingId && (
-            <button type="button" onClick={handleCancel}>
-              Cancelar
-            </button>
+            <button type="button" className={btnSecondary} onClick={handleCancel}>Cancelar</button>
           )}
         </div>
       </form>
-      {formError && <p className="error">{formError}</p>}
+      {formError && <p className={`${errorText} mb-4`}>{formError}</p>}
 
-      {loading && <p>Cargando...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>}
+      {error && <p className={errorText}>{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Dirección</th>
-            <th>Ciudad</th>
-            <th>Tipo</th>
-            <th>Precio mensual</th>
-            <th>Disponible</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((inmueble) => (
-            <tr key={inmueble.id}>
-              <td>{inmueble.codigo_referencia}</td>
-              <td>{inmueble.direccion}</td>
-              <td>{inmueble.ciudad_nombre}</td>
-              <td>{TIPO_INMUEBLE.find((t) => t.value === inmueble.tipo)?.label}</td>
-              <td>{inmueble.precio_mensual}</td>
-              <td>{inmueble.disponible ? 'Sí' : 'No'}</td>
-              <td className="actions">
-                <button type="button" onClick={() => handleEdit(inmueble)}>
-                  Editar
-                </button>
-                <button type="button" onClick={() => handleDelete(inmueble.id)}>
-                  Eliminar
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className={th}>Código</th>
+              <th className={th}>Dirección</th>
+              <th className={th}>Ciudad</th>
+              <th className={th}>Tipo</th>
+              <th className={th}>Precio mensual</th>
+              <th className={th}>Disponible</th>
+              <th className={th}></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((inmueble) => (
+              <tr key={inmueble.id} className={tableRow}>
+                <td className={`${td} font-medium text-slate-900 dark:text-white`}>{inmueble.codigo_referencia}</td>
+                <td className={td}>{inmueble.direccion}</td>
+                <td className={td}>{inmueble.ciudad_nombre}</td>
+                <td className={td}>{TIPO_INMUEBLE.find((t) => t.value === inmueble.tipo)?.label}</td>
+                <td className={`${td} tabular-nums`}>{inmueble.precio_mensual}</td>
+                <td className={td}>
+                  <Badge tone={inmueble.disponible ? 'green' : 'slate'}>{inmueble.disponible ? 'Sí' : 'No'}</Badge>
+                </td>
+                <td className={`${td} text-right`}>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" className={`${btnSecondary} ${btnSm}`} onClick={() => handleEdit(inmueble)}>Editar</button>
+                    <button type="button" className={`${btnDanger} ${btnSm}`} onClick={() => handleDelete(inmueble.id)}>Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

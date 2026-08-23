@@ -1,4 +1,5 @@
 import { useCrudForm } from '../hooks/useCrudForm';
+import { btnDanger, btnPrimary, btnSecondary, btnSm, card, errorText, field, input, label, pageTitle, td, tableRow, th } from '../ui/styles';
 
 const VACIO = { nombre: '', departamento: '' };
 
@@ -15,59 +16,66 @@ export default function CiudadesPage() {
 
   return (
     <div>
-      <h1>Ciudades</h1>
+      <h1 className={pageTitle}>Ciudades</h1>
 
-      <form onSubmit={handleSubmit} className="form-inline">
-        <input
-          name="nombre"
-          placeholder="Nombre"
-          value={form.nombre}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="departamento"
-          placeholder="Departamento"
-          value={form.departamento}
-          onChange={handleChange}
-        />
-        <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
-        {editingId && (
-          <button type="button" onClick={handleCancel}>
-            Cancelar
-          </button>
-        )}
+      <form onSubmit={handleSubmit} className={`${card} mb-6 flex flex-wrap items-end gap-3`}>
+        <div className={`${field} w-48`}>
+          <label className={label} htmlFor="nombre">Nombre</label>
+          <input id="nombre" name="nombre" className={input} value={form.nombre} onChange={handleChange} required />
+        </div>
+        <div className={`${field} w-48`}>
+          <label className={label} htmlFor="departamento">Departamento</label>
+          <input
+            id="departamento"
+            name="departamento"
+            className={input}
+            value={form.departamento}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="flex gap-2">
+          <button type="submit" className={btnPrimary}>{editingId ? 'Guardar' : 'Agregar'}</button>
+          {editingId && (
+            <button type="button" className={btnSecondary} onClick={handleCancel}>
+              Cancelar
+            </button>
+          )}
+        </div>
       </form>
-      {formError && <p className="error">{formError}</p>}
+      {formError && <p className={`${errorText} mb-4`}>{formError}</p>}
 
-      {loading && <p>Cargando...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>}
+      {error && <p className={errorText}>{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Departamento</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((ciudad) => (
-            <tr key={ciudad.id}>
-              <td>{ciudad.nombre}</td>
-              <td>{ciudad.departamento}</td>
-              <td className="actions">
-                <button type="button" onClick={() => handleEdit(ciudad)}>
-                  Editar
-                </button>
-                <button type="button" onClick={() => handleDelete(ciudad.id)}>
-                  Eliminar
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className={th}>Nombre</th>
+              <th className={th}>Departamento</th>
+              <th className={th}></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((ciudad) => (
+              <tr key={ciudad.id} className={tableRow}>
+                <td className={`${td} font-medium text-slate-900 dark:text-white`}>{ciudad.nombre}</td>
+                <td className={td}>{ciudad.departamento}</td>
+                <td className={`${td} text-right`}>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" className={`${btnSecondary} ${btnSm}`} onClick={() => handleEdit(ciudad)}>
+                      Editar
+                    </button>
+                    <button type="button" className={`${btnDanger} ${btnSm}`} onClick={() => handleDelete(ciudad.id)}>
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

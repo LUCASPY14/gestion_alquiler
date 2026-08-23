@@ -1,5 +1,10 @@
 import { useCrudForm } from '../hooks/useCrudForm';
 import { TIPO_DOCUMENTO } from '../utils/choices';
+import Badge from '../components/Badge';
+import {
+  btnDanger, btnPrimary, btnSecondary, btnSm, card, checkbox, checkboxRow,
+  errorText, field, input, label, pageTitle, td, tableRow, th,
+} from '../ui/styles';
 
 const VACIO = {
   nombre: '',
@@ -32,89 +37,88 @@ export default function InquilinosPage() {
 
   return (
     <div>
-      <h1>Inquilinos</h1>
+      <h1 className={pageTitle}>Inquilinos</h1>
 
-      <form onSubmit={handleSubmit} className="form-grid">
-        <input name="nombre" placeholder="Nombre" value={form.nombre} onChange={handleChange} required />
-        <input name="apellido" placeholder="Apellido" value={form.apellido} onChange={handleChange} required />
-        <select name="tipo_documento" value={form.tipo_documento} onChange={handleChange}>
-          {TIPO_DOCUMENTO.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <input
-          name="numero_documento"
-          placeholder="Número de documento"
-          value={form.numero_documento}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Correo electrónico"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="telefono_principal"
-          placeholder="Teléfono principal"
-          value={form.telefono_principal}
-          onChange={handleChange}
-          required
-        />
-        <label className="checkbox">
-          <input type="checkbox" name="activo" checked={form.activo} onChange={handleChange} />
-          Activo
-        </label>
-        <div className="form-actions">
-          <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
+      <form onSubmit={handleSubmit} className={`${card} mb-6`}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className={field}>
+            <label className={label} htmlFor="nombre">Nombre</label>
+            <input id="nombre" name="nombre" className={input} value={form.nombre} onChange={handleChange} required />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="apellido">Apellido</label>
+            <input id="apellido" name="apellido" className={input} value={form.apellido} onChange={handleChange} required />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="tipo_documento">Tipo de documento</label>
+            <select id="tipo_documento" name="tipo_documento" className={input} value={form.tipo_documento} onChange={handleChange}>
+              {TIPO_DOCUMENTO.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="numero_documento">Número de documento</label>
+            <input id="numero_documento" name="numero_documento" className={input} value={form.numero_documento} onChange={handleChange} required />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="email">Correo electrónico</label>
+            <input id="email" type="email" name="email" className={input} value={form.email} onChange={handleChange} required />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="telefono_principal">Teléfono principal</label>
+            <input id="telefono_principal" name="telefono_principal" className={input} value={form.telefono_principal} onChange={handleChange} required />
+          </div>
+          <label className={checkboxRow}>
+            <input type="checkbox" name="activo" className={checkbox} checked={form.activo} onChange={handleChange} />
+            Activo
+          </label>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button type="submit" className={btnPrimary}>{editingId ? 'Guardar' : 'Agregar'}</button>
           {editingId && (
-            <button type="button" onClick={handleCancel}>
-              Cancelar
-            </button>
+            <button type="button" className={btnSecondary} onClick={handleCancel}>Cancelar</button>
           )}
         </div>
       </form>
-      {formError && <p className="error">{formError}</p>}
+      {formError && <p className={`${errorText} mb-4`}>{formError}</p>}
 
-      {loading && <p>Cargando...</p>}
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>}
+      {error && <p className={errorText}>{error}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Documento</th>
-            <th>Email</th>
-            <th>Teléfono</th>
-            <th>Activo</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((inquilino) => (
-            <tr key={inquilino.id}>
-              <td>{inquilino.apellido}, {inquilino.nombre}</td>
-              <td>{inquilino.tipo_documento} {inquilino.numero_documento}</td>
-              <td>{inquilino.email}</td>
-              <td>{inquilino.telefono_principal}</td>
-              <td>{inquilino.activo ? 'Sí' : 'No'}</td>
-              <td className="actions">
-                <button type="button" onClick={() => handleEdit(inquilino)}>
-                  Editar
-                </button>
-                <button type="button" onClick={() => handleDelete(inquilino.id)}>
-                  Eliminar
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className={th}>Nombre</th>
+              <th className={th}>Documento</th>
+              <th className={th}>Email</th>
+              <th className={th}>Teléfono</th>
+              <th className={th}>Activo</th>
+              <th className={th}></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {items.map((inquilino) => (
+              <tr key={inquilino.id} className={tableRow}>
+                <td className={`${td} font-medium text-slate-900 dark:text-white`}>{inquilino.apellido}, {inquilino.nombre}</td>
+                <td className={td}>{inquilino.tipo_documento} {inquilino.numero_documento}</td>
+                <td className={td}>{inquilino.email}</td>
+                <td className={td}>{inquilino.telefono_principal}</td>
+                <td className={td}>
+                  <Badge tone={inquilino.activo ? 'green' : 'slate'}>{inquilino.activo ? 'Sí' : 'No'}</Badge>
+                </td>
+                <td className={`${td} text-right`}>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" className={`${btnSecondary} ${btnSm}`} onClick={() => handleEdit(inquilino)}>Editar</button>
+                    <button type="button" className={`${btnDanger} ${btnSm}`} onClick={() => handleDelete(inquilino.id)}>Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
