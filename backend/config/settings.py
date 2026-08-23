@@ -74,7 +74,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+    # Sin default: el modelo depende de ExclusionConstraint + BtreeGist,
+    # exclusivo de Postgres, así que caer a SQLite en silencio rompería
+    # las migraciones. Si falta DATABASE_URL, que falle explícito acá.
+    'default': env.db('DATABASE_URL')
 }
 
 
