@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api/client';
 
+async function fetchAllPages(endpoint, params) {
+  let url = `/${endpoint}/`;
+  let requestConfig = { params: { page_size: 200, ...params } };
+  const acumulado = [];
+
+  while (url) {
+    const { data } = await api.get(url, requestConfig);
+    if (!data.results) return data; // endpoint sin paginación
+    acumulado.push(...data.results);
+    url = data.next;
+    requestConfig = undefined; // `next` ya viene con la query completa
+  }
+  return acumulado;
+}
+
 export function useResource(endpoint, { params } = {}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,9 +24,8 @@ export function useResource(endpoint, { params } = {}) {
   const load = useCallback(() => {
     setLoading(true);
     setError('');
-    return api
-      .get(`/${endpoint}/`, { params: { page_size: 200, ...params } })
-      .then(({ data }) => setItems(data.results ?? data))
+    return fetchAllPages(endpoint, params)
+      .then(setItems)
       .catch(() => setError('No se pudo cargar la información.'))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
