@@ -2,6 +2,7 @@
 Django settings for config project.
 """
 
+import sys
 from pathlib import Path
 from datetime import timedelta
 import environ
@@ -12,6 +13,10 @@ env = environ.Env(
     DEBUG=(bool, False),
 )
 environ.Env.read_env(BASE_DIR / '.env')
+
+# Corriendo bajo `manage.py test` (o pytest): ejecuta las tareas de Celery
+# en el mismo proceso en vez de despacharlas a un worker.
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
@@ -174,3 +179,13 @@ CORS_ALLOW_CREDENTIALS = True
 # autenticar por cookie (ver CookieJWTAuthentication). Django compara el
 # header Origin contra esta lista en cualquier POST/PUT/PATCH/DELETE.
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=list(CORS_ALLOWED_ORIGINS))
+
+# --------------------- Celery (envío de WhatsApp en background) ---------------------
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:56379/0')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:56379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+# En tests corre la tarea en el mismo proceso (sin necesitar Redis/worker).
+CELERY_TASK_ALWAYS_EAGER = env.bool('CELERY_TASK_ALWAYS_EAGER', default=TESTING)
+CELERY_TASK_EAGER_PROPAGATES = True
