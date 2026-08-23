@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logoLgServices from '../assets/logo-lgservices.png';
 
 const LINKS_COMPLETO = [
   { to: '/', label: 'Inicio', end: true },
@@ -35,9 +36,14 @@ export default function Layout() {
   return (
     <div className="flex min-h-svh">
       <nav className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-        <h2 className="mb-6 px-2 text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-          Gestión Alquiler
-        </h2>
+        <div className="mb-6">
+          <div className="rounded-lg bg-white p-2 shadow-sm">
+            <img src={logoLgServices} alt="LGservices" className="w-full" />
+          </div>
+          <h2 className="mt-2 px-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+            Gestión Alquiler
+          </h2>
+        </div>
         <ul className="flex flex-1 flex-col gap-0.5">
           {links.map((link) => (
             <li key={link.to}>
@@ -64,6 +70,9 @@ export default function Layout() {
         >
           Cerrar sesión
         </button>
+        <p className="mt-4 px-1 text-center text-[11px] text-slate-400 dark:text-slate-500">
+          Desarrollado por LGservices
+        </p>
       </nav>
       <main className="flex-1 overflow-x-auto bg-white p-8 dark:bg-slate-950">
         <Outlet />

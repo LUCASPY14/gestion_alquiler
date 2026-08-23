@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logoLgServices from '../assets/logo-lgservices.png';
 import { btnPrimary, errorText, field, input, label } from '../ui/styles';
 
 export default function Login() {
@@ -27,10 +28,11 @@ export default function Login() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
-        <h1 className="mb-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        <img src={logoLgServices} alt="LGservices" className="mx-auto mb-4 w-48" />
+        <h1 className="mb-1 text-center text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
           Gestión Alquiler
         </h1>
-        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">Iniciá sesión para continuar</p>
+        <p className="mb-6 text-center text-sm text-slate-500 dark:text-slate-400">Iniciá sesión para continuar</p>
 
         <div className="flex flex-col gap-4">
           <div className={field}>
@@ -66,6 +68,9 @@ export default function Login() {
           Entrar
         </button>
         {error && <p className={`${errorText} mt-3`}>{error}</p>}
+        <p className="mt-6 text-center text-[11px] text-slate-400 dark:text-slate-500">
+          Desarrollado por LGservices
+        </p>
       </form>
     </div>
   );
