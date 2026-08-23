@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from .models import (
     User, Ciudad, Inmueble, Inquilino,
-    ContratoAlquiler, ContratoInquilino, Pago, Gasto,
+    ContratoAlquiler, ContratoInquilino, EstadoContrato, Pago, Gasto,
 )
 from .permissions import es_staff_o_admin
 
@@ -106,6 +106,30 @@ class ContratoAlquilerSerializer(serializers.ModelSerializer):
         if not es_staff_o_admin(user) and value.propietario_id != user.id:
             raise serializers.ValidationError('Ese inmueble no te pertenece.')
         return value
+
+    def validate(self, attrs):
+        # Replica en Python la ExclusionConstraint de la DB (contrato_sin_
+        # solapamiento_por_inmueble) para devolver un 400 prolijo en vez de
+        # que el INSERT/UPDATE choque con la constraint y tire un 500 crudo.
+        # La constraint sigue como respaldo ante una carrera entre requests
+        # concurrentes; esto cubre el caso normal.
+        inmueble = attrs.get('inmueble', getattr(self.instance, 'inmueble', None))
+        estado = attrs.get('estado', getattr(self.instance, 'estado', EstadoContrato.ACTIVO))
+        fecha_inicio = attrs.get('fecha_inicio', getattr(self.instance, 'fecha_inicio', None))
+        fecha_fin = attrs.get('fecha_fin', getattr(self.instance, 'fecha_fin', None))
+
+        if estado == EstadoContrato.ACTIVO and inmueble and fecha_inicio and fecha_fin:
+            solapados = ContratoAlquiler.objects.filter(
+                inmueble=inmueble, estado=EstadoContrato.ACTIVO,
+                fecha_inicio__lt=fecha_fin, fecha_fin__gt=fecha_inicio,
+            )
+            if self.instance:
+                solapados = solapados.exclude(pk=self.instance.pk)
+            if solapados.exists():
+                raise serializers.ValidationError(
+                    'Ya existe un contrato activo para este inmueble que se superpone con estas fechas.',
+                )
+        return attrs
 
 
 class PagoSerializer(serializers.ModelSerializer):

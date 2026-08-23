@@ -124,6 +124,55 @@ class ContratoAPITests(APITestCase):
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(response.data['results'][0]['numero_contrato'], 'CTR-ACTIVO')
 
+    def test_crear_contrato_solapado_devuelve_400_no_500(self):
+        inmueble = crear_inmueble(propietario=self.propietario)
+        crear_contrato(
+            inmueble=inmueble, numero_contrato='CTR-EXISTENTE', estado='ACT',
+            fecha_inicio='2026-01-01', fecha_fin='2026-12-31',
+        )
+
+        response = self.client.post('/api/contratos/', {
+            'inmueble': inmueble.id,
+            'numero_contrato': 'CTR-NUEVO',
+            'fecha_inicio': '2026-06-01',
+            'fecha_fin': '2027-05-31',
+            'monto_mensual': '1000000',
+            'deposito': '1000000',
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+
+    def test_editar_contrato_sin_cambiar_fechas_no_choca_contra_si_mismo(self):
+        inmueble = crear_inmueble(propietario=self.propietario)
+        contrato = crear_contrato(
+            inmueble=inmueble, numero_contrato='CTR-EDITAR', estado='ACT',
+            fecha_inicio='2026-01-01', fecha_fin='2026-12-31',
+        )
+
+        response = self.client.patch(f'/api/contratos/{contrato.id}/', {
+            'monto_mensual': '1234567',
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+
+    def test_contrato_finalizado_no_choca_contra_solapamiento(self):
+        inmueble = crear_inmueble(propietario=self.propietario)
+        crear_contrato(
+            inmueble=inmueble, numero_contrato='CTR-FIN', estado='FIN',
+            fecha_inicio='2026-01-01', fecha_fin='2026-12-31',
+        )
+
+        response = self.client.post('/api/contratos/', {
+            'inmueble': inmueble.id,
+            'numero_contrato': 'CTR-NUEVO-2',
+            'fecha_inicio': '2026-06-01',
+            'fecha_fin': '2027-05-31',
+            'monto_mensual': '1000000',
+            'deposito': '1000000',
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+
 
 class GestionUsuariosAPITests(APITestCase):
     def setUp(self):
