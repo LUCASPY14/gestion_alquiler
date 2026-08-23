@@ -238,6 +238,19 @@ class GestionUsuariosAPITests(APITestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_admin_carga_documento_identidad_y_direccion_del_propietario(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.patch(f'/api/users/{self.propietario.id}/', {
+            'documento_identidad': '1234567',
+            'direccion': 'Av. Mariscal López 1234, Asunción',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(response.data['documento_identidad'], '1234567')
+        self.assertEqual(response.data['direccion'], 'Av. Mariscal López 1234, Asunción')
+
+        self.propietario.refresh_from_db()
+        self.assertEqual(self.propietario.documento_identidad, '1234567')
+
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT_TEMPORAL)
 class DocumentosAPITests(APITestCase):

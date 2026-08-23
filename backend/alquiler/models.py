@@ -73,6 +73,8 @@ class TimeStampedModel(models.Model):
 # --------------------- MODELO DE USUARIO PERSONALIZADO ---------------------
 class User(AbstractUser):
     telefono = models.CharField('Teléfono', max_length=20, blank=True)
+    documento_identidad = models.CharField('Cédula/RUC', max_length=20, blank=True)
+    direccion = models.CharField('Dirección', max_length=255, blank=True)
     tipo_usuario = models.CharField(
         'Tipo de usuario', max_length=20,
         choices=TipoUsuario.choices, default=TipoUsuario.PROPIETARIO,

@@ -16,6 +16,8 @@ const VACIO = {
   first_name: '',
   last_name: '',
   telefono: '',
+  documento_identidad: '',
+  direccion: '',
   tipo_usuario: 'PROPIETARIO',
   is_active: true,
   password: '',
@@ -35,6 +37,8 @@ export default function UsuariosPage() {
       first_name: u.first_name ?? '',
       last_name: u.last_name ?? '',
       telefono: u.telefono ?? '',
+      documento_identidad: u.documento_identidad ?? '',
+      direccion: u.direccion ?? '',
       tipo_usuario: u.tipo_usuario,
       is_active: u.is_active,
     }),
@@ -93,6 +97,14 @@ export default function UsuariosPage() {
           <div className={field}>
             <label className={label} htmlFor="telefono">Teléfono</label>
             <input id="telefono" name="telefono" className={input} value={form.telefono} onChange={handleChange} />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="documento_identidad">Cédula/RUC</label>
+            <input id="documento_identidad" name="documento_identidad" className={input} value={form.documento_identidad} onChange={handleChange} />
+          </div>
+          <div className={field}>
+            <label className={label} htmlFor="direccion">Dirección</label>
+            <input id="direccion" name="direccion" className={input} value={form.direccion} onChange={handleChange} />
           </div>
           <div className={field}>
             <label className={label} htmlFor="tipo_usuario">Tipo de usuario</label>

@@ -14,10 +14,10 @@ class UserAdmin(DjangoUserAdmin):
     list_display = ['username', 'email', 'tipo_usuario', 'is_active', 'is_staff']
     list_filter = ['tipo_usuario', 'is_active']
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ('Gestión Alquiler', {'fields': ('telefono', 'tipo_usuario')}),
+        ('Gestión Alquiler', {'fields': ('telefono', 'documento_identidad', 'direccion', 'tipo_usuario')}),
     )
     add_fieldsets = DjangoUserAdmin.add_fieldsets + (
-        ('Gestión Alquiler', {'fields': ('telefono', 'tipo_usuario')}),
+        ('Gestión Alquiler', {'fields': ('telefono', 'documento_identidad', 'direccion', 'tipo_usuario')}),
     )
 
 
