@@ -15,3 +15,15 @@ class EsPropietarioOStaff(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return request.user.tipo_usuario != TipoUsuario.INQUILINO
+
+
+class SoloAdminEscribeUsuarios(BasePermission):
+    """Cualquier usuario autenticado puede leer (el queryset de UserViewSet ya
+    limita la lectura a admin/staff ve todos, el resto solo su propio perfil).
+    Crear, editar, borrar o cambiar contraseña de un usuario es exclusivo de
+    admin/staff."""
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return es_staff_o_admin(request.user)

@@ -3,7 +3,15 @@ import api, { setOnSessionExpired } from '../api/client';
 
 const AuthContext = createContext(null);
 
-const SESION_VACIA = { userId: null, tipoUsuario: null };
+const SESION_VACIA = { userId: null, tipoUsuario: null, esAdmin: false };
+
+function sesionDesde(data) {
+  return {
+    userId: data.id,
+    tipoUsuario: data.tipo_usuario,
+    esAdmin: data.tipo_usuario === 'ADMIN' || data.is_staff || data.is_superuser,
+  };
+}
 
 export function AuthProvider({ children }) {
   const [sesion, setSesion] = useState(SESION_VACIA);
@@ -14,14 +22,14 @@ export function AuthProvider({ children }) {
 
     api
       .get('/me/')
-      .then(({ data }) => setSesion({ userId: data.id, tipoUsuario: data.tipo_usuario }))
+      .then(({ data }) => setSesion(sesionDesde(data)))
       .catch(() => setSesion(SESION_VACIA))
       .finally(() => setCargandoSesion(false));
   }, []);
 
   async function login(username, password) {
     const { data } = await api.post('/token/', { username, password });
-    setSesion({ userId: data.id, tipoUsuario: data.tipo_usuario });
+    setSesion(sesionDesde(data));
   }
 
   async function logout() {
@@ -40,6 +48,7 @@ export function AuthProvider({ children }) {
       userId: sesion.userId,
       tipoUsuario: sesion.tipoUsuario,
       esInquilino: sesion.tipoUsuario === 'INQUILINO',
+      esAdmin: sesion.esAdmin,
       isAuthenticated: sesion.userId !== null,
       cargandoSesion,
       login,

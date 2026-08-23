@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from .models import (
     User, Ciudad, Inmueble, Inquilino,
     ContratoAlquiler, ContratoInquilino, Pago, Gasto,
@@ -6,9 +7,18 @@ from .models import (
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ['username', 'email', 'tipo_usuario', 'is_active']
+class UserAdmin(DjangoUserAdmin):
+    # admin.ModelAdmin genérico guardaría la contraseña tal cual se escribe
+    # en el campo (sin hashear); heredando de UserAdmin se usan los forms de
+    # auth (UserCreationForm/UserChangeForm) que sí llaman a set_password.
+    list_display = ['username', 'email', 'tipo_usuario', 'is_active', 'is_staff']
     list_filter = ['tipo_usuario', 'is_active']
+    fieldsets = DjangoUserAdmin.fieldsets + (
+        ('Gestión Alquiler', {'fields': ('telefono', 'tipo_usuario')}),
+    )
+    add_fieldsets = DjangoUserAdmin.add_fieldsets + (
+        ('Gestión Alquiler', {'fields': ('telefono', 'tipo_usuario')}),
+    )
 
 
 @admin.register(Ciudad)

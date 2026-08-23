@@ -1,12 +1,15 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.base import ContentFile
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import (
     User, Ciudad, Inmueble, Inquilino,
     ContratoAlquiler, ContratoInquilino, Pago, Gasto, EstadoPago, TipoUsuario,
 )
-from .permissions import es_staff_o_admin
+from .permissions import es_staff_o_admin, SoloAdminEscribeUsuarios
 from .serializers import (
     UserSerializer, CiudadSerializer, InmuebleSerializer, InquilinoSerializer,
     ContratoAlquilerSerializer, ContratoInquilinoSerializer, PagoSerializer, GastoSerializer,
@@ -43,6 +46,10 @@ class PropietarioScopedMixin:
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    # Reemplaza el permiso global: acá "cualquiera que no sea inquilino
+    # puede escribir" no alcanza (un propietario podría crear otros
+    # usuarios o asignarse tipo_usuario=ADMIN). Solo admin/staff escribe.
+    permission_classes = [IsAuthenticated, SoloAdminEscribeUsuarios]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -50,6 +57,20 @@ class UserViewSet(viewsets.ModelViewSet):
         if es_staff_o_admin(user):
             return qs
         return qs.filter(pk=user.pk)
+
+    @action(detail=True, methods=['post'], url_path='cambiar-password')
+    def cambiar_password(self, request, pk=None):
+        usuario = self.get_object()
+        password = request.data.get('password', '')
+        if not password:
+            return Response({'detail': 'La contraseña es obligatoria.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            validate_password(password, user=usuario)
+        except DjangoValidationError as exc:
+            return Response({'detail': list(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
+        usuario.set_password(password)
+        usuario.save()
+        return Response({'detail': 'Contraseña actualizada.'})
 
 
 class CiudadViewSet(viewsets.ModelViewSet):

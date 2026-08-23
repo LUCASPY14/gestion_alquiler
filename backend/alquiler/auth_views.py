@@ -39,7 +39,13 @@ def _set_auth_cookies(response, access, refresh=None):
 
 
 def _datos_usuario(user):
-    return {'id': user.id, 'username': user.username, 'tipo_usuario': user.tipo_usuario}
+    return {
+        'id': user.id,
+        'username': user.username,
+        'tipo_usuario': user.tipo_usuario,
+        'is_staff': user.is_staff,
+        'is_superuser': user.is_superuser,
+    }
 
 
 @method_decorator(ensure_csrf_cookie, name='post')

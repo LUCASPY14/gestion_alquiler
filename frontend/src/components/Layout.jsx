@@ -11,15 +11,21 @@ const LINKS_COMPLETO = [
   { to: '/ciudades', label: 'Ciudades' },
 ];
 
+const LINK_USUARIOS = { to: '/usuarios', label: 'Usuarios' };
+
 const LINKS_INQUILINO = [
   { to: '/contratos', label: 'Mis contratos' },
   { to: '/pagos', label: 'Mis pagos' },
 ];
 
 export default function Layout() {
-  const { logout, esInquilino } = useAuth();
+  const { logout, esInquilino, esAdmin } = useAuth();
   const navigate = useNavigate();
-  const links = esInquilino ? LINKS_INQUILINO : LINKS_COMPLETO;
+  const links = esInquilino
+    ? LINKS_INQUILINO
+    : esAdmin
+      ? [...LINKS_COMPLETO, LINK_USUARIOS]
+      : LINKS_COMPLETO;
 
   async function handleLogout() {
     await logout();

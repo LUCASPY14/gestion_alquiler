@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import AccessToken
 
+from alquiler.models import User
 from .factories import (
     crear_propietario, crear_ciudad, crear_inmueble, crear_inquilino,
     crear_contrato,
@@ -116,3 +117,68 @@ class ContratoAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(response.data['results'][0]['numero_contrato'], 'CTR-ACTIVO')
+
+
+class GestionUsuariosAPITests(APITestCase):
+    def setUp(self):
+        self.admin = crear_propietario(tipo_usuario='ADMIN')
+        self.propietario = crear_propietario()
+
+    def test_propietario_no_puede_crear_usuarios(self):
+        self.client.force_authenticate(user=self.propietario)
+        response = self.client.post('/api/users/', {
+            'username': 'intruso', 'password': 'clave-segura-123', 'tipo_usuario': 'ADMIN',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_propietario_no_puede_editar_a_otro_usuario(self):
+        self.client.force_authenticate(user=self.propietario)
+        response = self.client.patch(f'/api/users/{self.admin.id}/', {'tipo_usuario': 'PROPIETARIO'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_crea_usuario_con_password_hasheada_y_puede_loguearse(self):
+        # format='json' para reflejar cómo llama el frontend real (axios manda
+        # JSON); con el formato multipart por default del test client, un
+        # BooleanField ausente del payload se interpreta como un checkbox HTML
+        # sin marcar (is_active=False), algo que no pasa con JSON.
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/users/', {
+            'username': 'nuevo_propietario',
+            'password': 'clave-nueva-123',
+            'email': 'nuevo@example.com',
+            'tipo_usuario': 'PROPIETARIO',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertNotIn('password', response.data)
+
+        creado = User.objects.get(username='nuevo_propietario')
+        self.assertNotEqual(creado.password, 'clave-nueva-123')
+        self.assertTrue(creado.check_password('clave-nueva-123'))
+        self.assertTrue(creado.is_active)
+
+        self.client.force_authenticate(user=None)
+        login = self.client.post('/api/token/', {'username': 'nuevo_propietario', 'password': 'clave-nueva-123'})
+        self.assertEqual(login.status_code, status.HTTP_200_OK, login.data)
+
+    def test_admin_cambia_password_de_otro_usuario(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(f'/api/users/{self.propietario.id}/cambiar-password/', {
+            'password': 'password-reseteada-123',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.propietario.refresh_from_db()
+        self.assertTrue(self.propietario.check_password('password-reseteada-123'))
+
+    def test_propietario_no_puede_cambiar_password_ajena(self):
+        self.client.force_authenticate(user=self.propietario)
+        response = self.client.post(f'/api/users/{self.admin.id}/cambiar-password/', {
+            'password': 'lo-que-sea-123',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cambiar_password_valida_fortaleza(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(f'/api/users/{self.propietario.id}/cambiar-password/', {
+            'password': '123',
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

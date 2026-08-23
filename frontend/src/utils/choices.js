@@ -1,3 +1,9 @@
+export const TIPO_USUARIO = [
+  { value: 'ADMIN', label: 'Administrador' },
+  { value: 'PROPIETARIO', label: 'Propietario' },
+  { value: 'INQUILINO', label: 'Inquilino' },
+];
+
 export const TIPO_INMUEBLE = [
   { value: 'CASA', label: 'Casa' },
   { value: 'DPTO', label: 'Departamento' },
