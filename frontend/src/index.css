@@ -5,10 +5,14 @@
 
   --color-accent-50: #f2eeff;
   --color-accent-100: #e6dfff;
+  --color-accent-200: #d1c4ff;
+  --color-accent-300: #b39bff;
   --color-accent-400: #a78bfa;
   --color-accent-500: #8b5cf6;
   --color-accent-600: #6b3bff;
   --color-accent-700: #5a2fe0;
+  --color-accent-800: #4a26b8;
+  --color-accent-900: #3a1e8f;
 }
 
 @layer base {

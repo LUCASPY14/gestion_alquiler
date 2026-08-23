@@ -13,6 +13,7 @@ from alquiler.views import (
     ContratoAlquilerViewSet, ContratoInquilinoViewSet, PagoViewSet, GastoViewSet
 )
 from alquiler.auth_views import LoginView, RefreshView, LogoutView, MeView
+from alquiler.dashboard import DashboardResumenView
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -31,6 +32,7 @@ urlpatterns = [
     path('api/token/refresh/', RefreshView.as_view(), name='token_refresh'),
     path('api/logout/', LogoutView.as_view(), name='logout'),
     path('api/me/', MeView.as_view(), name='me'),
+    path('api/dashboard/resumen/', DashboardResumenView.as_view(), name='dashboard-resumen'),
 
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[AllowAny]), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(
