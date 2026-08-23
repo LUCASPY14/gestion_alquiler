@@ -1,34 +1,38 @@
-import { createContext, useContext, useMemo, useState } from 'react';
-import axios from 'axios';
-import { decodeJwtPayload } from '../utils/jwt';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import api, { setOnSessionExpired } from '../api/client';
 
 const AuthContext = createContext(null);
 
-function sesionDesdeTokenGuardado() {
-  const token = localStorage.getItem('access_token');
-  if (!token) return { userId: null, tipoUsuario: null };
-  const payload = decodeJwtPayload(token);
-  return { userId: payload?.user_id ?? null, tipoUsuario: payload?.tipo_usuario ?? null };
-}
+const SESION_VACIA = { userId: null, tipoUsuario: null };
 
 export function AuthProvider({ children }) {
-  const [sesion, setSesion] = useState(sesionDesdeTokenGuardado);
+  const [sesion, setSesion] = useState(SESION_VACIA);
+  const [cargandoSesion, setCargandoSesion] = useState(true);
+
+  useEffect(() => {
+    setOnSessionExpired(() => setSesion(SESION_VACIA));
+
+    api
+      .get('/me/')
+      .then(({ data }) => setSesion({ userId: data.id, tipoUsuario: data.tipo_usuario }))
+      .catch(() => setSesion(SESION_VACIA))
+      .finally(() => setCargandoSesion(false));
+  }, []);
 
   async function login(username, password) {
-    const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/token/`, {
-      username,
-      password,
-    });
-    localStorage.setItem('access_token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
-    const payload = decodeJwtPayload(data.access);
-    setSesion({ userId: payload?.user_id ?? null, tipoUsuario: payload?.tipo_usuario ?? null });
+    const { data } = await api.post('/token/', { username, password });
+    setSesion({ userId: data.id, tipoUsuario: data.tipo_usuario });
   }
 
-  function logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    setSesion({ userId: null, tipoUsuario: null });
+  async function logout() {
+    try {
+      await api.post('/logout/');
+    } catch {
+      // Igual limpiamos la sesión del lado del cliente aunque el backend
+      // no responda (ej. sin red): que un fallo ahí no trabe la navegación.
+    } finally {
+      setSesion(SESION_VACIA);
+    }
   }
 
   const value = useMemo(
@@ -37,10 +41,11 @@ export function AuthProvider({ children }) {
       tipoUsuario: sesion.tipoUsuario,
       esInquilino: sesion.tipoUsuario === 'INQUILINO',
       isAuthenticated: sesion.userId !== null,
+      cargandoSesion,
       login,
       logout,
     }),
-    [sesion],
+    [sesion, cargandoSesion],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

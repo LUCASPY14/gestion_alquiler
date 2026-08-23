@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import AccessToken
 
 from .factories import (
     crear_propietario, crear_ciudad, crear_inmueble, crear_inquilino,
@@ -12,15 +13,17 @@ class AutenticacionTests(APITestCase):
         response = self.client.get('/api/inmuebles/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_login_con_credenciales_validas_devuelve_tokens(self):
+    def test_login_con_credenciales_validas_setea_cookies_httponly(self):
         crear_propietario(username='lucas', password='clave-segura-123')
         response = self.client.post('/api/token/', {
             'username': 'lucas',
             'password': 'clave-segura-123',
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
+        self.assertEqual(response.data['username'], 'lucas')
+        self.assertNotIn('access', response.data)
+        self.assertTrue(response.cookies['access_token']['httponly'])
+        self.assertTrue(response.cookies['refresh_token']['httponly'])
 
     def test_login_con_credenciales_invalidas_devuelve_401(self):
         crear_propietario(username='lucas', password='clave-segura-123')
@@ -29,6 +32,15 @@ class AutenticacionTests(APITestCase):
             'password': 'incorrecta',
         })
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_el_access_token_incluye_el_tipo_de_usuario(self):
+        crear_propietario(username='ana', password='clave-segura-123', tipo_usuario='ADMIN')
+        response = self.client.post('/api/token/', {
+            'username': 'ana',
+            'password': 'clave-segura-123',
+        })
+        token = AccessToken(response.cookies['access_token'].value)
+        self.assertEqual(token['tipo_usuario'], 'ADMIN')
 
 
 class InmuebleAPITests(APITestCase):

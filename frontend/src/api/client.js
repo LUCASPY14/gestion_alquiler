@@ -2,50 +2,56 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
 });
 
+const METODOS_SEGUROS = new Set(['get', 'head', 'options']);
+
+function leerCookie(nombre) {
+  const match = document.cookie.match(new RegExp(`(?:^|; )${nombre}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!METODOS_SEGUROS.has((config.method || 'get').toLowerCase())) {
+    const csrfToken = leerCookie('csrftoken');
+    if (csrfToken) {
+      config.headers['X-CSRFToken'] = csrfToken;
+    }
   }
   return config;
 });
 
 let refreshPromise = null;
+let onSessionExpired = null;
 
-function clearSessionAndRedirect() {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login';
-  }
+export function setOnSessionExpired(callback) {
+  onSessionExpired = callback;
+}
+
+function manejarSesionExpirada() {
+  if (onSessionExpired) onSessionExpired();
 }
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const { config, response } = error;
-    const refreshToken = localStorage.getItem('refresh_token');
 
-    if (response?.status !== 401 || config._retried || !refreshToken) {
-      if (response?.status === 401) clearSessionAndRedirect();
+    if (response?.status !== 401 || config._retried || config.url?.endsWith('/token/refresh/')) {
+      if (response?.status === 401) manejarSesionExpirada();
       return Promise.reject(error);
     }
 
     config._retried = true;
     try {
-      refreshPromise ??= axios
-        .post(`${import.meta.env.VITE_API_URL}/token/refresh/`, { refresh: refreshToken })
-        .finally(() => {
-          refreshPromise = null;
-        });
-      const { data } = await refreshPromise;
-      localStorage.setItem('access_token', data.access);
-      config.headers.Authorization = `Bearer ${data.access}`;
+      refreshPromise ??= api.post('/token/refresh/').finally(() => {
+        refreshPromise = null;
+      });
+      await refreshPromise;
       return api(config);
     } catch (refreshError) {
-      clearSessionAndRedirect();
+      manejarSesionExpirada();
       return Promise.reject(refreshError);
     }
   },

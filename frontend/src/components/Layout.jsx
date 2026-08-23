@@ -21,8 +21,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const links = esInquilino ? LINKS_INQUILINO : LINKS_COMPLETO;
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate('/login');
   }
 

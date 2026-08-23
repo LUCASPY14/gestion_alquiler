@@ -130,7 +130,7 @@ WAHA_SESSION = env('WAHA_SESSION', default='default')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'alquiler.authentication.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -148,6 +148,12 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
+# Cookies httpOnly donde se guardan el access/refresh token (ver
+# alquiler/authentication.py y alquiler/auth_views.py). secure=True exige
+# HTTPS, por eso queda atado a DEBUG salvo que se fuerce por env.
+JWT_COOKIE_SECURE = env.bool('JWT_COOKIE_SECURE', default=not DEBUG)
+JWT_COOKIE_SAMESITE = env('JWT_COOKIE_SAMESITE', default='Lax')
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Gestión Alquiler',
     'DESCRIPTION': 'API para el control de alquiler de inmuebles: propietarios, inquilinos, contratos, pagos y gastos.',
@@ -160,3 +166,11 @@ CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
     default=['http://localhost:5173', 'http://127.0.0.1:5173'],
 )
+# Las cookies de auth solo sirven si el navegador las manda de vuelta; el
+# frontend usa axios con withCredentials: true.
+CORS_ALLOW_CREDENTIALS = True
+
+# El login/token-refresh ahora setean cookies y DRF exige CSRF para
+# autenticar por cookie (ver CookieJWTAuthentication). Django compara el
+# header Origin contra esta lista en cualquier POST/PUT/PATCH/DELETE.
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=list(CORS_ALLOWED_ORIGINS))

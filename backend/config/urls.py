@@ -12,8 +12,7 @@ from alquiler.views import (
     UserViewSet, CiudadViewSet, InmuebleViewSet, InquilinoViewSet,
     ContratoAlquilerViewSet, ContratoInquilinoViewSet, PagoViewSet, GastoViewSet
 )
-from alquiler.auth_views import TokenObtainPairConTipoUsuarioView
-from rest_framework_simplejwt.views import TokenRefreshView
+from alquiler.auth_views import LoginView, RefreshView, LogoutView, MeView
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -28,8 +27,10 @@ router.register(r'gastos', GastoViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),  # Todas las rutas de la API estarán bajo /api/
-    path('api/token/', TokenObtainPairConTipoUsuarioView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/', LoginView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', RefreshView.as_view(), name='token_refresh'),
+    path('api/logout/', LogoutView.as_view(), name='logout'),
+    path('api/me/', MeView.as_view(), name='me'),
 
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[AllowAny]), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(

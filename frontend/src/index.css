@@ -83,6 +83,14 @@ textarea {
   margin: 8px 0;
 }
 
+.pagina-cargando {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
 /* Login */
 .login-page {
   min-height: 100svh;
