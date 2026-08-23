@@ -14,8 +14,8 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / '.env')
 
-# Corriendo bajo `manage.py test` (o pytest): ejecuta las tareas de Celery
-# en el mismo proceso en vez de despacharlas a un worker.
+# Corriendo bajo `manage.py test` (o pytest): desactiva throttling y ejecuta
+# las tareas de Celery en el mismo proceso en vez de despacharlas a un worker.
 TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -146,6 +146,18 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    # None desactiva el límite: en tests el cache de throttling persiste
+    # entre TestCase y frena requests de casos que no tienen nada que ver.
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': None if TESTING else '20/minute',
+        'user': None if TESTING else '120/minute',
+        'login': None if TESTING else '5/minute',
+    },
 }
 
 SIMPLE_JWT = {
@@ -179,6 +191,17 @@ CORS_ALLOW_CREDENTIALS = True
 # autenticar por cookie (ver CookieJWTAuthentication). Django compara el
 # header Origin contra esta lista en cualquier POST/PUT/PATCH/DELETE.
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=list(CORS_ALLOWED_ORIGINS))
+
+# --------------------- Hardening de producción ---------------------
+# Todo atado a DEBUG por default: en dev (DEBUG=True) queda desactivado,
+# en producción (DEBUG=False) se activa solo, sin tocar nada a mano.
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=not DEBUG)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=not DEBUG)
+SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0 if DEBUG else 31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # --------------------- Celery (envío de WhatsApp en background) ---------------------
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:56379/0')
