@@ -7,6 +7,10 @@ vi.mock('../api/client', () => ({
   default: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 describe('useResource', () => {
   it('recorre todas las páginas del backend en vez de truncar en la primera', async () => {
     api.get.mockImplementation((url) => {
@@ -63,5 +67,37 @@ describe('useResource', () => {
     await result.current.remove(1);
     expect(api.delete).toHaveBeenCalledWith('/inmuebles/1/');
     expect(api.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('create manda FormData (multipart) cuando el payload trae un archivo', async () => {
+    api.get.mockResolvedValue({ data: { count: 0, next: null, results: [] } });
+    api.post.mockResolvedValue({ data: { id: 1 } });
+
+    const { result } = renderHook(() => useResource('inquilinos'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const archivo = new File(['contenido'], 'cedula.pdf', { type: 'application/pdf' });
+    await result.current.create({ nombre: 'Ana', activo: true, documento_archivo: archivo });
+
+    const [url, body] = api.post.mock.calls[0];
+    expect(url).toBe('/inquilinos/');
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get('nombre')).toBe('Ana');
+    expect(body.get('activo')).toBe('true'); // booleano explícito: ausente = checkbox sin marcar para DRF
+    expect(body.get('documento_archivo')).toBe(archivo);
+  });
+
+  it('create manda JSON plano cuando no hay archivos en el payload', async () => {
+    api.get.mockResolvedValue({ data: { count: 0, next: null, results: [] } });
+    api.post.mockResolvedValue({ data: { id: 1 } });
+
+    const { result } = renderHook(() => useResource('ciudades'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await result.current.create({ nombre: 'Luque' });
+
+    const [, body] = api.post.mock.calls[0];
+    expect(body).toEqual({ nombre: 'Luque' });
+    expect(body).not.toBeInstanceOf(FormData);
   });
 });

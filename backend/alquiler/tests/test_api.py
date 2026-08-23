@@ -1,3 +1,7 @@
+import tempfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import AccessToken
@@ -7,6 +11,8 @@ from .factories import (
     crear_propietario, crear_ciudad, crear_inmueble, crear_inquilino,
     crear_contrato,
 )
+
+MEDIA_ROOT_TEMPORAL = tempfile.mkdtemp()
 
 
 class AutenticacionTests(APITestCase):
@@ -181,4 +187,60 @@ class GestionUsuariosAPITests(APITestCase):
         response = self.client.post(f'/api/users/{self.propietario.id}/cambiar-password/', {
             'password': '123',
         }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT_TEMPORAL)
+class DocumentosAPITests(APITestCase):
+    """Subida de archivos vía API (documento de identidad del inquilino y
+    PDF del contrato) — multipart/form-data, como manda el frontend."""
+
+    def setUp(self):
+        self.propietario = crear_propietario()
+        self.client.force_authenticate(user=self.propietario)
+
+    def test_crea_inquilino_con_documento_pdf(self):
+        archivo = SimpleUploadedFile('cedula.pdf', b'%PDF-1.4 contenido', content_type='application/pdf')
+        payload = {
+            'nombre': 'Marta', 'apellido': 'Duarte', 'tipo_documento': 'DNI',
+            'numero_documento': '5551234', 'email': 'marta@example.com',
+            'telefono_principal': '0981000000', 'documento_archivo': archivo,
+        }
+        response = self.client.post('/api/inquilinos/', payload, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertIsNotNone(response.data['documento_archivo'])
+
+    def test_rechaza_documento_de_inquilino_con_extension_no_permitida(self):
+        archivo = SimpleUploadedFile('cedula.exe', b'contenido', content_type='application/octet-stream')
+        payload = {
+            'nombre': 'Marta', 'apellido': 'Duarte', 'tipo_documento': 'DNI',
+            'numero_documento': '5551235', 'email': 'marta2@example.com',
+            'telefono_principal': '0981000000', 'documento_archivo': archivo,
+        }
+        response = self.client.post('/api/inquilinos/', payload, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_crea_contrato_con_documento_pdf(self):
+        inmueble = crear_inmueble(propietario=self.propietario)
+        archivo = SimpleUploadedFile('contrato.pdf', b'%PDF-1.4 contenido', content_type='application/pdf')
+        payload = {
+            'inmueble': inmueble.id, 'numero_contrato': 'CTR-DOC-001',
+            'fecha_inicio': '2026-01-01', 'fecha_fin': '2026-12-31',
+            'monto_mensual': '1000000', 'deposito': '1000000',
+            'documento_contrato': archivo,
+        }
+        response = self.client.post('/api/contratos/', payload, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertIsNotNone(response.data['documento_contrato'])
+
+    def test_rechaza_documento_de_contrato_que_no_sea_pdf(self):
+        inmueble = crear_inmueble(propietario=self.propietario)
+        archivo = SimpleUploadedFile('contrato.jpg', b'contenido', content_type='image/jpeg')
+        payload = {
+            'inmueble': inmueble.id, 'numero_contrato': 'CTR-DOC-002',
+            'fecha_inicio': '2026-01-01', 'fecha_fin': '2026-12-31',
+            'monto_mensual': '1000000', 'deposito': '1000000',
+            'documento_contrato': archivo,
+        }
+        response = self.client.post('/api/contratos/', payload, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

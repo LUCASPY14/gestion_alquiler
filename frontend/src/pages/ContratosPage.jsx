@@ -4,6 +4,7 @@ import { useCrudForm } from '../hooks/useCrudForm';
 import { useAuth } from '../context/AuthContext';
 import { ESTADO_CONTRATO, ESTADO_CONTRATO_TONO, PERIODICIDAD_CONTRATO, ROL_INQUILINO } from '../utils/choices';
 import Badge from '../components/Badge';
+import FileField from '../components/FileField';
 import {
   btnDanger, btnPrimary, btnSecondary, btnSm, card, errorText, field, input,
   label, pageTitle, td, tableRow, th,
@@ -44,6 +45,7 @@ export default function ContratosPage() {
   const { items: inmuebles } = useResource('inmuebles');
   const { items: inquilinos } = useResource('inquilinos');
   const { create: crearContratoInquilino } = useResource('contrato-inquilinos');
+  const contratoEditado = items.find((c) => c.id === editingId);
 
   const [inquilinoTitular, setInquilinoTitular] = useState('');
   const [agregando, setAgregando] = useState(null); // contrato id
@@ -124,6 +126,15 @@ export default function ContratosPage() {
                 ))}
               </select>
             </div>
+            <FileField
+              id="documento_contrato"
+              name="documento_contrato"
+              labelText="Contrato firmado (PDF)"
+              onChange={handleChange}
+              urlActual={contratoEditado?.documento_contrato}
+              textoActual="Ver documento cargado"
+              accept=".pdf"
+            />
             {!editingId && (
               <div className={field}>
                 <label className={label} htmlFor="inquilino_titular">Inquilino titular (opcional)</label>
@@ -164,6 +175,7 @@ export default function ContratosPage() {
               <th className={th}>Monto mensual</th>
               <th className={th}>Estado</th>
               <th className={th}>Inquilinos</th>
+              <th className={th}>Documento</th>
               {!esInquilino && <th className={th}></th>}
             </tr>
           </thead>
@@ -221,6 +233,15 @@ export default function ContratosPage() {
                         + inquilino
                       </button>
                     )
+                  )}
+                </td>
+                <td className={td}>
+                  {contrato.documento_contrato ? (
+                    <a href={contrato.documento_contrato} target="_blank" rel="noreferrer" className="font-medium text-accent-600 hover:underline dark:text-accent-400">
+                      Ver
+                    </a>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500">—</span>
                   )}
                 </td>
                 {!esInquilino && (

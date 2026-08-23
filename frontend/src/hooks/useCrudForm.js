@@ -22,7 +22,13 @@ export function useCrudForm({
   const [formError, setFormError] = useState('');
 
   function handleChange(e) {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type, checked, files } = e.target;
+    if (type === 'file') {
+      // <input type="file"> no se puede controlar con `value` (por seguridad
+      // del navegador): tomamos el archivo elegido directo de `files`.
+      setForm((f) => ({ ...f, [name]: files[0] ?? null }));
+      return;
+    }
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   }
 

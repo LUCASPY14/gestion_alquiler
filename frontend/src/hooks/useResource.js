@@ -16,6 +16,26 @@ async function fetchAllPages(endpoint, params) {
   return acumulado;
 }
 
+function contieneArchivo(payload) {
+  return Object.values(payload).some((valor) => valor instanceof File);
+}
+
+// Un archivo no viaja en JSON: si el payload trae un File hay que mandarlo
+// como multipart/form-data. DRF trata un booleano ausente del formulario
+// como un checkbox HTML sin marcar, así que los mandamos siempre explícitos.
+function aFormData(payload) {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([clave, valor]) => {
+    if (valor === null || valor === undefined) return;
+    formData.append(clave, typeof valor === 'boolean' ? String(valor) : valor);
+  });
+  return formData;
+}
+
+function armarBody(payload) {
+  return contieneArchivo(payload) ? aFormData(payload) : payload;
+}
+
 export function useResource(endpoint, { params } = {}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,13 +56,13 @@ export function useResource(endpoint, { params } = {}) {
   }, [load]);
 
   async function create(payload) {
-    const { data } = await api.post(`/${endpoint}/`, payload);
+    const { data } = await api.post(`/${endpoint}/`, armarBody(payload));
     await load();
     return data;
   }
 
   async function update(id, payload) {
-    await api.patch(`/${endpoint}/${id}/`, payload);
+    await api.patch(`/${endpoint}/${id}/`, armarBody(payload));
     await load();
   }
 

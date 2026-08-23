@@ -37,6 +37,17 @@ describe('useCrudForm', () => {
     expect(result.current.form.nombre).toBe('Asunción');
   });
 
+  it('handleChange toma el archivo de `files` en un input type=file (no se puede controlar por value)', async () => {
+    const { result } = renderCrud();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const archivo = new File(['contenido'], 'cedula.pdf', { type: 'application/pdf' });
+    act(() => {
+      result.current.handleChange({ target: { name: 'documento_archivo', type: 'file', files: [archivo] } });
+    });
+    expect(result.current.form.documento_archivo).toBe(archivo);
+  });
+
   it('handleSubmit crea un registro nuevo y limpia el form', async () => {
     api.post.mockResolvedValue({ data: { id: 5, nombre: 'Luque' } });
     const { result } = renderCrud();

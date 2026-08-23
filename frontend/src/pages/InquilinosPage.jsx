@@ -1,6 +1,7 @@
 import { useCrudForm } from '../hooks/useCrudForm';
 import { TIPO_DOCUMENTO } from '../utils/choices';
 import Badge from '../components/Badge';
+import FileField from '../components/FileField';
 import {
   btnDanger, btnPrimary, btnSecondary, btnSm, card, checkbox, checkboxRow,
   errorText, field, input, label, pageTitle, td, tableRow, th,
@@ -34,6 +35,7 @@ export default function InquilinosPage() {
     }),
     mensajeConfirmarBorrado: '¿Eliminar este inquilino?',
   });
+  const inquilinoEditado = items.find((i) => i.id === editingId);
 
   return (
     <div>
@@ -69,6 +71,14 @@ export default function InquilinosPage() {
             <label className={label} htmlFor="telefono_principal">Teléfono principal</label>
             <input id="telefono_principal" name="telefono_principal" className={input} value={form.telefono_principal} onChange={handleChange} required />
           </div>
+          <FileField
+            id="documento_archivo"
+            name="documento_archivo"
+            labelText="Documento de identidad (PDF o imagen)"
+            onChange={handleChange}
+            urlActual={inquilinoEditado?.documento_archivo}
+            textoActual="Ver documento cargado"
+          />
           <label className={checkboxRow}>
             <input type="checkbox" name="activo" className={checkbox} checked={form.activo} onChange={handleChange} />
             Activo
@@ -95,6 +105,7 @@ export default function InquilinosPage() {
               <th className={th}>Email</th>
               <th className={th}>Teléfono</th>
               <th className={th}>Activo</th>
+              <th className={th}>Documento</th>
               <th className={th}></th>
             </tr>
           </thead>
@@ -107,6 +118,15 @@ export default function InquilinosPage() {
                 <td className={td}>{inquilino.telefono_principal}</td>
                 <td className={td}>
                   <Badge tone={inquilino.activo ? 'green' : 'slate'}>{inquilino.activo ? 'Sí' : 'No'}</Badge>
+                </td>
+                <td className={td}>
+                  {inquilino.documento_archivo ? (
+                    <a href={inquilino.documento_archivo} target="_blank" rel="noreferrer" className="font-medium text-accent-600 hover:underline dark:text-accent-400">
+                      Ver
+                    </a>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500">—</span>
+                  )}
                 </td>
                 <td className={`${td} text-right`}>
                   <div className="flex justify-end gap-2">
