@@ -1,16 +1,63 @@
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from alquiler.models import TipoUsuario
+from alquiler.permissions import EsPropietarioOStaff, es_staff_o_admin
 from .factories import (
     crear_propietario, crear_ciudad, crear_inmueble, crear_inquilino,
     crear_contrato, crear_pago, crear_gasto,
 )
 
 MEDIA_ROOT_TEMPORAL = tempfile.mkdtemp()
+
+
+class EsStaffOAdminTests(SimpleTestCase):
+    def test_is_staff_cuenta_como_staff_o_admin(self):
+        user = SimpleNamespace(is_staff=True, is_superuser=False, tipo_usuario=TipoUsuario.PROPIETARIO)
+        self.assertTrue(es_staff_o_admin(user))
+
+    def test_is_superuser_cuenta_como_staff_o_admin(self):
+        user = SimpleNamespace(is_staff=False, is_superuser=True, tipo_usuario=TipoUsuario.PROPIETARIO)
+        self.assertTrue(es_staff_o_admin(user))
+
+    def test_tipo_usuario_admin_cuenta_como_staff_o_admin(self):
+        user = SimpleNamespace(is_staff=False, is_superuser=False, tipo_usuario=TipoUsuario.ADMIN)
+        self.assertTrue(es_staff_o_admin(user))
+
+    def test_propietario_comun_no_es_staff_ni_admin(self):
+        user = SimpleNamespace(is_staff=False, is_superuser=False, tipo_usuario=TipoUsuario.PROPIETARIO)
+        self.assertFalse(es_staff_o_admin(user))
+
+
+class EsPropietarioOStaffTests(SimpleTestCase):
+    def setUp(self):
+        self.permiso = EsPropietarioOStaff()
+
+    def _request(self, method, tipo_usuario):
+        return SimpleNamespace(method=method, user=SimpleNamespace(tipo_usuario=tipo_usuario))
+
+    def test_permite_lectura_a_inquilino(self):
+        request = self._request('GET', TipoUsuario.INQUILINO)
+        self.assertTrue(self.permiso.has_permission(request, None))
+
+    def test_bloquea_escritura_a_inquilino(self):
+        for metodo in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            with self.subTest(metodo=metodo):
+                request = self._request(metodo, TipoUsuario.INQUILINO)
+                self.assertFalse(self.permiso.has_permission(request, None))
+
+    def test_permite_escritura_a_propietario(self):
+        request = self._request('POST', TipoUsuario.PROPIETARIO)
+        self.assertTrue(self.permiso.has_permission(request, None))
+
+    def test_permite_escritura_a_admin(self):
+        request = self._request('POST', TipoUsuario.ADMIN)
+        self.assertTrue(self.permiso.has_permission(request, None))
 
 
 class AislamientoEntrePropietariosTests(APITestCase):

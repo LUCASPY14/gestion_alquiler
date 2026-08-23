@@ -1,12 +1,17 @@
 import tempfile
+from io import BytesIO
 from unittest.mock import Mock, patch
 
 from django.test import TestCase, override_settings
+from pypdf import PdfReader
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from alquiler.models import EstadoPago
-from .factories import crear_pago, crear_propietario, crear_inmueble, crear_contrato
+from alquiler.services.recibos import _formatear_gs, generar_recibo_pdf
+from .factories import (
+    crear_pago, crear_propietario, crear_inmueble, crear_contrato, crear_inquilino,
+)
 
 MEDIA_ROOT_TEMPORAL = tempfile.mkdtemp()
 
@@ -57,6 +62,35 @@ class GeneracionAutomaticaReciboTests(TestCase):
         self.assertEqual(mock_post.call_count, 2)
 
 
+def _texto_pdf(pdf_bytes):
+    lector = PdfReader(BytesIO(pdf_bytes))
+    return '\n'.join(pagina.extract_text() for pagina in lector.pages)
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT_TEMPORAL)
+class ContenidoReciboPdfTests(TestCase):
+    def test_el_pdf_incluye_los_datos_del_pago(self):
+        inquilino = crear_inquilino(nombre='Marta', apellido='Duarte')
+        contrato = crear_contrato(inquilino=inquilino, numero_contrato='CTR-9001')
+        pago = crear_pago(contrato=contrato, monto='1234567.00')
+
+        pdf_bytes = generar_recibo_pdf(pago)
+        texto = _texto_pdf(pdf_bytes)
+
+        self.assertTrue(pdf_bytes.startswith(b'%PDF'))
+        self.assertIn(pago.numero_recibo, texto)
+        self.assertIn('CTR-9001', texto)
+        self.assertIn('Duarte', texto)
+        self.assertIn(_formatear_gs(pago.monto), texto)
+
+    def test_el_pdf_incluye_observaciones_cuando_hay(self):
+        pago = crear_pago(observaciones='Pago con descuento por pronto pago')
+
+        texto = _texto_pdf(generar_recibo_pdf(pago))
+
+        self.assertIn('Pago con descuento por pronto pago', texto)
+
+
 @override_settings(MEDIA_ROOT=MEDIA_ROOT_TEMPORAL)
 @patch('alquiler.services.whatsapp.requests.post')
 class RegenerarReciboAPITests(APITestCase):
@@ -77,3 +111,38 @@ class RegenerarReciboAPITests(APITestCase):
         pago = crear_pago(contrato=self.contrato, estado=EstadoPago.PENDIENTE)
         response = self.client.post(f'/api/pagos/{pago.id}/regenerar-recibo/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT_TEMPORAL)
+class SignalEmitirReciboAlPagarTests(TestCase):
+    """Aísla la orquestación de la señal (¿llama al generador de PDF y
+    despacha la tarea de WhatsApp con los argumentos correctos?) de la
+    generación real del PDF y del envío real, que ya tienen su propia
+    cobertura en ContenidoReciboPdfTests y test_whatsapp.py."""
+
+    @patch('alquiler.signals.enviar_recibo_whatsapp_task')
+    @patch('alquiler.signals.generar_recibo_pdf')
+    def test_al_pasar_a_pagado_genera_el_pdf_y_despacha_la_tarea(self, mock_generar_pdf, mock_task):
+        mock_generar_pdf.return_value = b'%PDF-1.4 contenido de prueba'
+        pago = crear_pago(estado=EstadoPago.PENDIENTE)
+        mock_generar_pdf.assert_not_called()
+
+        pago.estado = EstadoPago.PAGADO
+        pago.save()
+
+        mock_generar_pdf.assert_called_once_with(pago)
+        mock_task.delay.assert_called_once_with(pago.pk)
+
+    @patch('alquiler.signals.enviar_recibo_whatsapp_task')
+    @patch('alquiler.signals.generar_recibo_pdf')
+    def test_si_ya_tiene_recibo_no_vuelve_a_generar_ni_a_despachar(self, mock_generar_pdf, mock_task):
+        mock_generar_pdf.return_value = b'%PDF-1.4 contenido de prueba'
+        pago = crear_pago(estado=EstadoPago.PAGADO)
+        mock_generar_pdf.reset_mock()
+        mock_task.reset_mock()
+
+        pago.observaciones = 'corrección menor'
+        pago.save()
+
+        mock_generar_pdf.assert_not_called()
+        mock_task.delay.assert_not_called()
