@@ -1,48 +1,17 @@
-import { useState } from 'react';
-import { useResource } from '../hooks/useResource';
+import { useCrudForm } from '../hooks/useCrudForm';
 
 const VACIO = { nombre: '', departamento: '' };
 
 export default function CiudadesPage() {
-  const { items, loading, error, create, update, remove } = useResource('ciudades');
-  const [form, setForm] = useState(VACIO);
-  const [editingId, setEditingId] = useState(null);
-  const [formError, setFormError] = useState('');
-
-  function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    try {
-      if (editingId) {
-        await update(editingId, form);
-      } else {
-        await create(form);
-      }
-      setForm(VACIO);
-      setEditingId(null);
-    } catch {
-      setFormError('No se pudo guardar. Revisá los datos.');
-    }
-  }
-
-  function handleEdit(ciudad) {
-    setEditingId(ciudad.id);
-    setForm({ nombre: ciudad.nombre, departamento: ciudad.departamento ?? '' });
-  }
-
-  function handleCancel() {
-    setEditingId(null);
-    setForm(VACIO);
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('¿Eliminar esta ciudad?')) return;
-    await remove(id);
-  }
+  const {
+    items, loading, error, form, editingId, formError,
+    handleChange, handleSubmit, handleEdit, handleCancel, handleDelete,
+  } = useCrudForm({
+    endpoint: 'ciudades',
+    valorVacio: VACIO,
+    mapearAFormulario: (ciudad) => ({ nombre: ciudad.nombre, departamento: ciudad.departamento ?? '' }),
+    mensajeConfirmarBorrado: '¿Eliminar esta ciudad?',
+  });
 
   return (
     <div>

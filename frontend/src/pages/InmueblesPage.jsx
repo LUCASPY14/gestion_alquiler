@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
+import { useCrudForm } from '../hooks/useCrudForm';
 import { TIPO_INMUEBLE } from '../utils/choices';
 
 const VACIO = {
@@ -14,37 +14,13 @@ const VACIO = {
 };
 
 export default function InmueblesPage() {
-  const { items, loading, error, create, update, remove } = useResource('inmuebles');
-  const { items: ciudades } = useResource('ciudades');
-
-  const [form, setForm] = useState(VACIO);
-  const [editingId, setEditingId] = useState(null);
-  const [formError, setFormError] = useState('');
-
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    try {
-      if (editingId) {
-        await update(editingId, form);
-      } else {
-        await create(form);
-      }
-      setForm(VACIO);
-      setEditingId(null);
-    } catch {
-      setFormError('No se pudo guardar. Revisá los datos.');
-    }
-  }
-
-  function handleEdit(inmueble) {
-    setEditingId(inmueble.id);
-    setForm({
+  const {
+    items, loading, error, form, editingId, formError,
+    handleChange, handleSubmit, handleEdit, handleCancel, handleDelete,
+  } = useCrudForm({
+    endpoint: 'inmuebles',
+    valorVacio: VACIO,
+    mapearAFormulario: (inmueble) => ({
       codigo_referencia: inmueble.codigo_referencia,
       direccion: inmueble.direccion,
       ciudad: inmueble.ciudad,
@@ -53,18 +29,10 @@ export default function InmueblesPage() {
       banos: inmueble.banos,
       precio_mensual: inmueble.precio_mensual,
       disponible: inmueble.disponible,
-    });
-  }
-
-  function handleCancel() {
-    setEditingId(null);
-    setForm(VACIO);
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('¿Eliminar este inmueble?')) return;
-    await remove(id);
-  }
+    }),
+    mensajeConfirmarBorrado: '¿Eliminar este inmueble?',
+  });
+  const { items: ciudades } = useResource('ciudades');
 
   return (
     <div>

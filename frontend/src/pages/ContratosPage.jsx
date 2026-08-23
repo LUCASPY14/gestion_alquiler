@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
+import { useCrudForm } from '../hooks/useCrudForm';
 import { useAuth } from '../context/AuthContext';
 import { PERIODICIDAD_CONTRATO, ESTADO_CONTRATO, ROL_INQUILINO } from '../utils/choices';
 
@@ -16,50 +17,13 @@ const VACIO = {
 
 export default function ContratosPage() {
   const { esInquilino } = useAuth();
-  const { items, loading, error, create, update, remove } = useResource('contratos');
-  const { items: inmuebles } = useResource('inmuebles');
-  const { items: inquilinos } = useResource('inquilinos');
-  const { create: crearContratoInquilino } = useResource('contrato-inquilinos');
-
-  const [form, setForm] = useState(VACIO);
-  const [inquilinoTitular, setInquilinoTitular] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [formError, setFormError] = useState('');
-
-  const [agregando, setAgregando] = useState(null); // contrato id
-  const [nuevoInquilino, setNuevoInquilino] = useState({ inquilino: '', rol: 'TIT' });
-
-  function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    try {
-      if (editingId) {
-        await update(editingId, form);
-      } else {
-        const contrato = await create(form);
-        if (inquilinoTitular) {
-          await crearContratoInquilino({
-            contrato: contrato.id,
-            inquilino: inquilinoTitular,
-            rol: 'TIT',
-          });
-        }
-      }
-      setForm(VACIO);
-      setInquilinoTitular('');
-      setEditingId(null);
-    } catch {
-      setFormError('No se pudo guardar. Revisá los datos (¿fechas superpuestas con otro contrato activo?).');
-    }
-  }
-
-  function handleEdit(contrato) {
-    setEditingId(contrato.id);
-    setForm({
+  const {
+    items, loading, error, form, editingId, formError,
+    handleChange, handleSubmit, handleEdit, handleCancel, handleDelete,
+  } = useCrudForm({
+    endpoint: 'contratos',
+    valorVacio: VACIO,
+    mapearAFormulario: (contrato) => ({
       inmueble: contrato.inmueble,
       numero_contrato: contrato.numero_contrato,
       fecha_inicio: contrato.fecha_inicio,
@@ -68,18 +32,32 @@ export default function ContratosPage() {
       deposito: contrato.deposito,
       periodicidad: contrato.periodicidad,
       estado: contrato.estado,
-    });
-  }
+    }),
+    mensajeError: 'No se pudo guardar. Revisá los datos (¿fechas superpuestas con otro contrato activo?).',
+    mensajeConfirmarBorrado: '¿Eliminar este contrato?',
+  });
+  const { items: inmuebles } = useResource('inmuebles');
+  const { items: inquilinos } = useResource('inquilinos');
+  const { create: crearContratoInquilino } = useResource('contrato-inquilinos');
 
-  function handleCancel() {
-    setEditingId(null);
-    setForm(VACIO);
+  const [inquilinoTitular, setInquilinoTitular] = useState('');
+  const [agregando, setAgregando] = useState(null); // contrato id
+  const [nuevoInquilino, setNuevoInquilino] = useState({ inquilino: '', rol: 'TIT' });
+
+  async function onSubmit(e) {
+    await handleSubmit(e, {
+      onCreado: async (contrato) => {
+        if (inquilinoTitular) {
+          await crearContratoInquilino({ contrato: contrato.id, inquilino: inquilinoTitular, rol: 'TIT' });
+        }
+      },
+    });
     setInquilinoTitular('');
   }
 
-  async function handleDelete(id) {
-    if (!window.confirm('¿Eliminar este contrato?')) return;
-    await remove(id);
+  function onCancel() {
+    handleCancel();
+    setInquilinoTitular('');
   }
 
   async function handleAgregarInquilino(contratoId) {
@@ -94,7 +72,7 @@ export default function ContratosPage() {
       <h1>{esInquilino ? 'Mis contratos' : 'Contratos'}</h1>
 
       {!esInquilino && (
-        <form onSubmit={handleSubmit} className="form-grid">
+        <form onSubmit={onSubmit} className="form-grid">
           <select name="inmueble" value={form.inmueble} onChange={handleChange} required>
             <option value="">Inmueble...</option>
             {inmuebles.map((i) => (
@@ -157,7 +135,7 @@ export default function ContratosPage() {
           <div className="form-actions">
             <button type="submit">{editingId ? 'Guardar' : 'Agregar'}</button>
             {editingId && (
-              <button type="button" onClick={handleCancel}>
+              <button type="button" onClick={onCancel}>
                 Cancelar
               </button>
             )}

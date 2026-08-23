@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
+import { useCrudForm } from '../hooks/useCrudForm';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { METODO_PAGO, ESTADO_PAGO } from '../utils/choices';
@@ -19,55 +20,25 @@ const VACIO = {
 
 export default function PagosPage() {
   const { esInquilino } = useAuth();
-  const { items, loading, error, create, update, remove, reload } = useResource('pagos');
-  const { items: contratos } = useResource('contratos');
-  const [emitiendo, setEmitiendo] = useState(null);
-
-  const [form, setForm] = useState(VACIO);
-  const [editingId, setEditingId] = useState(null);
-  const [formError, setFormError] = useState('');
-
-  function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    try {
-      if (editingId) {
-        await update(editingId, form);
-      } else {
-        await create(form);
-      }
-      setForm(VACIO);
-      setEditingId(null);
-    } catch {
-      setFormError('No se pudo guardar. ¿Ya existe un pago para ese contrato y período?');
-    }
-  }
-
-  function handleEdit(pago) {
-    setEditingId(pago.id);
-    setForm({
+  const {
+    items, loading, error, form, editingId, formError, reload,
+    handleChange, handleSubmit, handleEdit, handleCancel, handleDelete,
+  } = useCrudForm({
+    endpoint: 'pagos',
+    valorVacio: VACIO,
+    mapearAFormulario: (pago) => ({
       contrato: pago.contrato,
       fecha_pago: pago.fecha_pago,
       fecha_periodo: pago.fecha_periodo,
       monto: pago.monto,
       metodo_pago: pago.metodo_pago,
       estado: pago.estado,
-    });
-  }
-
-  function handleCancel() {
-    setEditingId(null);
-    setForm(VACIO);
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('¿Eliminar este pago?')) return;
-    await remove(id);
-  }
+    }),
+    mensajeError: 'No se pudo guardar. ¿Ya existe un pago para ese contrato y período?',
+    mensajeConfirmarBorrado: '¿Eliminar este pago?',
+  });
+  const { items: contratos } = useResource('contratos');
+  const [emitiendo, setEmitiendo] = useState(null);
 
   async function handleEmitirRecibo(id) {
     setEmitiendo(id);

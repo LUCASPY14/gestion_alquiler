@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { useResource } from '../hooks/useResource';
+import { useCrudForm } from '../hooks/useCrudForm';
 import { CATEGORIA_GASTO } from '../utils/choices';
 
 const VACIO = {
@@ -12,55 +12,23 @@ const VACIO = {
 };
 
 export default function GastosPage() {
-  const { items, loading, error, create, update, remove } = useResource('gastos');
-  const { items: inmuebles } = useResource('inmuebles');
-
-  const [form, setForm] = useState(VACIO);
-  const [editingId, setEditingId] = useState(null);
-  const [formError, setFormError] = useState('');
-
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    try {
-      if (editingId) {
-        await update(editingId, form);
-      } else {
-        await create(form);
-      }
-      setForm(VACIO);
-      setEditingId(null);
-    } catch {
-      setFormError('No se pudo guardar. Revisá los datos.');
-    }
-  }
-
-  function handleEdit(gasto) {
-    setEditingId(gasto.id);
-    setForm({
+  const {
+    items, loading, error, form, editingId, formError,
+    handleChange, handleSubmit, handleEdit, handleCancel, handleDelete,
+  } = useCrudForm({
+    endpoint: 'gastos',
+    valorVacio: VACIO,
+    mapearAFormulario: (gasto) => ({
       inmueble: gasto.inmueble,
       descripcion: gasto.descripcion,
       monto: gasto.monto,
       fecha: gasto.fecha,
       categoria: gasto.categoria,
       pagado: gasto.pagado,
-    });
-  }
-
-  function handleCancel() {
-    setEditingId(null);
-    setForm(VACIO);
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('¿Eliminar este gasto?')) return;
-    await remove(id);
-  }
+    }),
+    mensajeConfirmarBorrado: '¿Eliminar este gasto?',
+  });
+  const { items: inmuebles } = useResource('inmuebles');
 
   return (
     <div>
